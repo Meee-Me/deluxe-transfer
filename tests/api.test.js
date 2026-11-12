@@ -78,6 +78,19 @@ test("upload route hands out a client token", async () => {
   assert.equal((await uploadRoute(req("POST", "/api/upload", body))).status, 400);
 });
 
+test("the sender picks how long files stay", async () => {
+  const keep = async (hours) => {
+    const { code, owner } = await (await create(req("POST", "/api/create"))).json();
+    blobs.set(`t/${code}/${DIR}/a.txt`, mk(`t/${code}/${DIR}/a.txt`, 1));
+    const d = await (await finish(req("POST", "/api/finish", { code, owner, hours }))).json();
+    return Math.round((d.expires - Date.now()) / 3600000);
+  };
+  assert.equal(await keep(1), 1);
+  assert.equal(await keep(168), 168);
+  assert.equal(await keep(undefined), 24);
+  assert.equal(await keep(9999), 24, "only the offered choices");
+});
+
 test("too big is refused and removed", async () => {
   const { code, owner } = await (await create(req("POST", "/api/create"))).json();
   blobs.set(`t/${code}/${DIR}/big.bin`, mk(`t/${code}/${DIR}/big.bin`, 2 * 1024 * 1024));
