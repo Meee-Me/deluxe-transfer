@@ -1,6 +1,11 @@
 // Shared code for the API. Files starting with "_" are not deployed as their own endpoints.
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto";
 import * as blob from "@vercel/blob";
+import { supabaseStore, supabaseReady, supabaseUrl, supabaseKey, decodeName } from "./_supabase.js";
+export { decodeName };
+
+const NO_STORAGE =
+  "Storage isn't connected yet. In Vercel, open this project's Storage tab, create a Blob store (Public) and connect it, then redeploy.";
 
 export const MAX_MB = Number(process.env.MAX_MB || 100);
 export const MAX_BYTES = MAX_MB * 1024 * 1024;
@@ -12,13 +17,35 @@ export const MAX_FILES = 50;
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I
 const CODE_LEN = 6;
 
-// Swappable so tests can use an in-memory store.
-export const store = {
+// Where files are kept: Vercel Blob when it is connected, otherwise Supabase
+// Storage when Supabase is connected.
+export const blobReady = () => !!String(process.env.BLOB_READ_WRITE_TOKEN || "").trim();
+export function backend() {
+  if (blobReady()) return "blob";
+  if (supabaseReady()) return "supabase";
+  return null;
+}
+const blobStore = {
   head: (p) => blob.head(p),
   list: (o) => blob.list(o),
   put: (p, body, o) => blob.put(p, body, o),
   del: (urls) => blob.del(urls),
   fetchJson: async (url) => (await fetch(url, { cache: "no-store" })).json(),
+};
+const active = () => {
+  const b = backend();
+  if (b === "blob") return blobStore;
+  if (b === "supabase") return supabaseStore;
+  throw Object.assign(new Error(NO_STORAGE), { status: 503 });
+};
+// Swappable so tests can use an in-memory store.
+export const store = {
+  head: (p) => active().head(p),
+  list: (o) => active().list(o),
+  put: (p, body, o) => active().put(p, body, o),
+  del: (urls) => active().del(urls),
+  fetchJson: (url) => active().fetchJson(url),
+  signUpload: (p) => supabaseStore.signUpload(p),
 };
 
 export const json = (body, status = 200) =>
@@ -38,11 +65,9 @@ export function cleanCode(code) {
   return code.length === CODE_LEN && [...code].every((c) => CODE_CHARS.includes(c)) ? code : null;
 }
 
-const NO_STORAGE =
-  "Storage isn't connected yet. In Vercel, open this project's Storage tab, create a Blob store (Public) and connect it, then redeploy.";
 
 function secret() {
-  const s = process.env.TRANSFER_SECRET || process.env.BLOB_READ_WRITE_TOKEN;
+  const s = String(process.env.TRANSFER_SECRET || process.env.BLOB_READ_WRITE_TOKEN || (supabaseUrl() && supabaseKey()) || "").trim();
   if (!s) throw Object.assign(new Error(NO_STORAGE), { status: 503 });
   return s;
 }
@@ -74,7 +99,7 @@ export function isOwner(code, key) {
 export const prefix = (code) => `t/${code}/`;
 export const metaPath = (code) => `t/${code}/meta.json`;
 // t/CODE/<random folder>/<file name>  — the random folder keeps file addresses unguessable
-export const FILE_PATH = /^t\/([A-Z0-9]{6})\/([A-Za-z0-9]{20,64})\/([^/]{1,200})$/;
+export const FILE_PATH = /^t\/([A-Z0-9]{6})\/([A-Za-z0-9]{20,64})\/([^/]{1,300})$/;
 
 export async function listAll(pfx) {
   const blobs = [];

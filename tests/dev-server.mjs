@@ -1,15 +1,24 @@
 // Local stand-in for Vercel: serves public/, runs api/*.js, keeps "Blob" files in memory.
 // node tests/dev-server.mjs  -> http://localhost:3000   (uploads need the browser test's fake Blob API)
+// STORAGE=supabase: use a pretend Supabase Storage instead (tests/fake-supabase.mjs).
 import http from "node:http";
 import { readFile } from "node:fs/promises";
-process.env.BLOB_READ_WRITE_TOKEN ||= "vercel_blob_rw_local_secretsecretsecret";
+const SUPA = process.env.STORAGE === "supabase";
+if (SUPA) {
+  const { startFakeSupabase } = await import("./fake-supabase.mjs");
+  const fake = await startFakeSupabase({ key: "sb_secret_local" });
+  delete process.env.BLOB_READ_WRITE_TOKEN;
+  process.env.SUPABASE_URL = fake.url;
+  process.env.SUPABASE_SECRET_KEY = "sb_secret_local";
+  console.log("pretend Supabase at " + fake.url);
+} else process.env.BLOB_READ_WRITE_TOKEN ||= "vercel_blob_rw_local_secretsecretsecret";
 const lib = await import("../api/_lib.js");
 const blobs = new Map();
 const PORT = Number(process.env.PORT || 3000);
 const BASE = `http://localhost:${PORT}/_blob/`;
 const nf = () => Object.assign(new Error("not found"), { name: "BlobNotFoundError" });
 const rec = (p, body) => ({ pathname: p, size: body.length, body, uploadedAt: new Date(), url: BASE + p, downloadUrl: BASE + p + "?download=1" });
-Object.assign(lib.store, {
+if (!SUPA) Object.assign(lib.store, {
   head: async (p) => { if (!blobs.has(p)) throw nf(); return blobs.get(p); },
   list: async ({ prefix }) => ({ blobs: [...blobs.values()].filter((b) => b.pathname.startsWith(prefix)), hasMore: false }),
   put: async (p, body) => { blobs.set(p, rec(p, Buffer.from(body))); },

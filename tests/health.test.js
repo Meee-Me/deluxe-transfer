@@ -9,5 +9,5 @@ test("without storage, the reason is given", async () => {
   assert.equal(r.status, 503);
   assert.match((await r.json()).error, /Storage isn't connected/);
   const { GET } = await import("../api/health.js");
-  assert.deepEqual(await (await GET(new Request("https://x.test/api/health"))).json(), { ok: true, storage: false, deluxeMail: false });
+  assert.deepEqual(await (await GET(new Request("https://x.test/api/health"))).json(), { ok: true, storage: false, backend: null, deluxeMail: false });
 });

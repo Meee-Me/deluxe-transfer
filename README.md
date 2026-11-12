@@ -19,8 +19,11 @@ whoever has either can download them for 24 hours.
   "Deluxe Transfer" folder.
 - `/api/health` shows whether storage and Deluxe Mail sending are set up (yes/no only).
 
-Runs on **Vercel**. Files go from the browser straight into **Vercel Blob**, so Vercel's
-4.5 MB function limit does not apply.
+Runs on **Vercel**. Files go from the browser straight into storage, so Vercel's 4.5 MB function
+limit does not apply. Storage is **Vercel Blob** when it is connected, otherwise **Supabase
+Storage** when Supabase is connected (`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` or
+`SUPABASE_SECRET_KEY`; the public `deluxe-transfer` bucket is made on first use, or set
+`SUPABASE_BUCKET`). `/api/health` says which one is in use.
 
 ## Put it on Vercel
 
@@ -70,5 +73,6 @@ Files are stored at `t/CODE/<random 24 characters>/<file name>`, so their addres
 npm install
 npm test                 # API tests with an in-memory Blob store
 FAKE_MAIN=1 node tests/dev-server.mjs  # local server on :3000 (in-memory storage, pretend Deluxe Main)
+STORAGE=supabase node tests/dev-server.mjs  # the same with a pretend Supabase Storage
 npm run bundle           # rebuild public/lib.js (upload, zip and QR code libraries)
 ```

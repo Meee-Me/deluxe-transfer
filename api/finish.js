@@ -1,6 +1,6 @@
 // POST /api/finish {code, owner}  Seals a transfer once its files are uploaded.
 import { json, cleanCode, isOwner, listAll, prefix, metaPath, metaHead, deleteTransfer,
-  publicMeta, store, FILE_PATH, MAX_BYTES, MAX_MB, MAX_FILES, keepHours, guarded } from "./_lib.js";
+  publicMeta, store, FILE_PATH, MAX_BYTES, MAX_MB, MAX_FILES, keepHours, guarded, decodeName } from "./_lib.js";
 
 export const POST = guarded(async function POST(request) {
   const { code: raw, owner, hours } = await request.json().catch(() => ({}));
@@ -21,7 +21,7 @@ export const POST = guarded(async function POST(request) {
     created: Date.now(),
     expires: Date.now() + keepHours(hours) * 3600 * 1000,
     files: files.map((f) => ({
-      name: FILE_PATH.exec(f.pathname)[3],
+      name: decodeName(FILE_PATH.exec(f.pathname)[3]).slice(0, 200),
       size: f.size,
       url: f.url,
       downloadUrl: f.downloadUrl,
