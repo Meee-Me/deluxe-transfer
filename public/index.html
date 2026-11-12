@@ -38,12 +38,20 @@ li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;te
 .link button{border:0;border-radius:10px;padding:0 16px;font:inherit;font-weight:600;background:var(--soft);color:var(--ink);cursor:pointer}
 .muted{color:var(--muted);font-size:14px;text-align:center}
 .err{color:var(--bad);margin-top:12px;text-align:center}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#account{flex:none;margin-top:2px}
+.mail{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.mail h2{font-size:16px;margin:0 0 8px}
+.mail input,.mail textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:12px;font:inherit;margin-bottom:8px}
+.mail textarea{min-height:64px;resize:vertical}
+.ok{color:#2e7d32;margin-top:8px;text-align:center}
+@media (prefers-color-scheme:dark){.ok{color:#81c784}}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
-  <h1>Deluxe Transfer</h1>
+  <header><h1>Deluxe Transfer</h1><div id="account"></div></header>
   <p class="sub">Send files with a code. Up to 100 MB, gone after 24 hours.</p>
 
   <div class="tabs" role="tablist">
@@ -68,6 +76,14 @@ li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;te
       <p class="muted">or this link</p>
       <div class="link"><input id="outlink" readonly><button id="copy">Copy</button></div>
       <button class="btn" id="share" hidden>Share…</button>
+      <form class="mail" id="mailform">
+        <h2>Send by Deluxe Mail</h2>
+        <input id="mailto" type="text" inputmode="email" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="name@deluxemail.com">
+        <textarea id="note" maxlength="2000" placeholder="Message (optional)"></textarea>
+        <button class="btn" id="mailbtn">Send by Deluxe Mail</button>
+        <p class="ok" id="mailok" hidden></p>
+        <p class="err" id="mailerr" hidden></p>
+      </form>
       <button class="btn ghost" id="again">Send more files</button>
       <button class="btn danger" id="del">Delete now</button>
     </div>
@@ -86,6 +102,7 @@ li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;te
     <p class="err" id="geterr" hidden></p>
   </section>
 </main>
+<script src="https://deluxe-main.vercel.app/deluxe.js" data-app="transfer"></script>
 <script type="module">
 import { upload } from "/blob-upload.js";
 const $ = id => document.getElementById(id);
@@ -161,15 +178,45 @@ $("go").onclick = async () => {
     progress(100, "Finishing…");
     current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner }) })), owner };
     progress(null);
-    $("outcode").textContent = current.code;
-    $("outlink").value = current.link;
-    $("pick").hidden = true; $("done").hidden = false;
-    $("share").hidden = !navigator.share;
+    showDone();
   } catch (e) {
     progress(null);
     show($("senderr"), e.message || "Upload failed. Try again.");
     $("go").disabled = false;
   }
+};
+const SAVED = "transfer.current";
+function showDone(){
+  try { sessionStorage.setItem(SAVED, JSON.stringify(current)); } catch {}
+  $("outcode").textContent = current.code;
+  $("outlink").value = current.link;
+  $("pick").hidden = true; $("done").hidden = false;
+  $("share").hidden = !navigator.share;
+  show($("mailok"), ""); show($("mailerr"), "");
+  mailButton();
+}
+const D = window.Deluxe;
+const signedIn = () => !!(D && D.user());
+function mailButton(){ $("mailbtn").textContent = signedIn() ? "Send by Deluxe Mail" : "Sign in with Deluxe Main to send"; }
+if (D) { D.button($("account")); D.onChange(mailButton); D.ready.then(mailButton); }
+$("mailform").onsubmit = async e => {
+  e.preventDefault();
+  show($("mailok"), ""); show($("mailerr"), "");
+  if (!D) return show($("mailerr"), "Deluxe Main could not be reached. Try again in a moment.");
+  if (!signedIn()) { D.signIn(); return; }  // comes back here; the transfer is kept in this tab
+  const to = $("mailto").value.trim();
+  if (!to) return show($("mailerr"), "Enter a Deluxe Mail address.");
+  $("mailbtn").disabled = true;
+  try {
+    const r = await fetch("/api/share", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + D.token() },
+      body: JSON.stringify({ code: current.code, owner: current.owner, to, note: $("note").value }) });
+    const body = await r.json().catch(() => ({}));
+    if (r.status === 401 && body.code === "signin") { D.signIn(); return; }
+    if (!r.ok) throw new Error(body.error || "Could not send that. Try again.");
+    show($("mailok"), `Sent to ${body.to}`);
+    $("mailto").value = ""; $("note").value = "";
+  } catch (err) { show($("mailerr"), err.message); }
+  $("mailbtn").disabled = false;
 };
 $("copy").onclick = async () => {
   try { await navigator.clipboard.writeText($("outlink").value); } catch { $("outlink").select(); document.execCommand("copy"); }
@@ -178,6 +225,7 @@ $("copy").onclick = async () => {
 $("share").onclick = () => navigator.share({ title: "Files for you", text: `Code: ${current.code}`, url: current.link }).catch(() => {});
 function reset(){
   picked = []; current = null; choose([]);
+  try { sessionStorage.removeItem(SAVED); } catch {}
   $("bar").firstElementChild.style.width = "0";
   $("pick").hidden = false; $("done").hidden = true;
 }
@@ -206,6 +254,10 @@ async function find(code){
 }
 $("lookup").onsubmit = e => { e.preventDefault(); const c = $("codein").value.trim(); if (c.length === 6) find(c); else show($("geterr"), "Codes are 6 letters and numbers."); };
 
+try {
+  const saved = JSON.parse(sessionStorage.getItem(SAVED) || "null");
+  if (saved && saved.code && saved.expires > Date.now() && location.pathname === "/") { current = saved; showDone(); }
+} catch {}
 const m = location.pathname.match(/^\/d\/([A-Za-z0-9]{6})\/?$/);
 if (m) { tab("get"); $("codein").value = m[1].toUpperCase(); find(m[1].toUpperCase()); }
 </script>
