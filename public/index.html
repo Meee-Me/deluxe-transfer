@@ -44,7 +44,7 @@ li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;te
 <body>
 <main>
   <h1>Deluxe Transfer</h1>
-  <p class="sub">Send files with a code. Up to {{ max_mb }} MB, gone after {{ hours|round|int }} hours.</p>
+  <p class="sub">Send files with a code. Up to 100 MB, gone after 24 hours.</p>
 
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-send" aria-selected="true">Send</button>
@@ -76,21 +76,21 @@ li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;te
 
   <section id="get" class="card" hidden>
     <form id="lookup">
-      <input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" value="{{ code or '' }}">
+      <input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" value="">
       <button class="btn">Find files</button>
     </form>
     <div id="found" hidden>
       <ul id="files"></ul>
-      <a class="btn" id="all" hidden>Download all (.zip)</a>
       <p class="muted" id="expires"></p>
     </div>
-    <p class="err" id="geterr" hidden>{% if missing %}No transfer with that code, or it has expired.{% endif %}</p>
+    <p class="err" id="geterr" hidden></p>
   </section>
 </main>
-<script>
+<script type="module">
+import { upload } from "/blob-upload.js";
 const $ = id => document.getElementById(id);
 const size = b => b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(1) + " KB" : b < 1073741824 ? (b/1048576).toFixed(1) + " MB" : (b/1073741824).toFixed(2) + " GB";
-const MAX = {{ max_mb }} * 1048576;
+const MAX_MB = 100, MAX = MAX_MB * 1048576;
 let picked = [], current = null;
 
 function tab(name){
@@ -115,7 +115,7 @@ function choose(list){
   $("chosen").replaceChildren(...picked.map(f => li(f.name, size(f.size))));
   $("go").disabled = !picked.length || total > MAX;
   $("go").textContent = picked.length ? `Send ${picked.length} file${picked.length > 1 ? "s" : ""} (${size(total)})` : "Send";
-  show($("senderr"), total > MAX ? `Too big: the limit is {{ max_mb }} MB.` : "");
+  show($("senderr"), total > MAX ? `Too big: the limit is ${MAX_MB} MB.` : "");
 }
 $("file").onchange = e => { choose(e.target.files); e.target.value = ""; };
 const drop = $("drop");
@@ -123,30 +123,53 @@ const drop = $("drop");
 ["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => choose(e.dataTransfer.files));
 
-$("go").onclick = () => {
-  const form = new FormData();
-  picked.forEach(f => form.append("files", f, f.name));
-  const xhr = new XMLHttpRequest();
-  xhr.open("POST", "/api/upload");
-  $("go").disabled = true; $("bar").hidden = false; $("pct").hidden = false; show($("senderr"), "");
-  xhr.upload.onprogress = e => {
-    if (!e.lengthComputable) return;
-    const p = Math.round(e.loaded / e.total * 100);
-    $("bar").firstElementChild.style.width = p + "%";
-    $("pct").textContent = p < 100 ? `Uploading… ${p}%` : "Finishing…";
-  };
-  xhr.onload = () => {
-    let body = {}; try { body = JSON.parse(xhr.responseText); } catch {}
-    $("bar").hidden = true; $("pct").hidden = true;
-    if (xhr.status !== 200) { show($("senderr"), body.error || "Upload failed. Try again."); $("go").disabled = false; return; }
-    current = body;
-    $("outcode").textContent = body.code;
-    $("outlink").value = body.link;
+function cleanName(n){ return (n.replace(/[\/\\\x00-\x1f]/g, "_").trim().replace(/^\.+/, "") || "file").slice(0, 200); }
+function randomDir(){ const a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789"; return [...crypto.getRandomValues(new Uint8Array(24))].map(x => a[x % a.length]).join(""); }
+async function api(path, opts = {}){
+  const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, ...opts });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.error || "Something went wrong. Try again.");
+  return body;
+}
+function progress(p, text){
+  $("bar").hidden = $("pct").hidden = p == null;
+  if (p != null){ $("bar").firstElementChild.style.width = p + "%"; $("pct").textContent = text; }
+}
+$("go").onclick = async () => {
+  $("go").disabled = true; show($("senderr"), "");
+  const total = picked.reduce((s, f) => s + f.size, 0) || 1;
+  let done = 0;
+  try {
+    progress(0, "Starting…");
+    const { code, owner } = await api("/api/create");
+    const used = new Set();
+    for (const f of picked) {
+      let name = cleanName(f.name), n = 2;
+      const dot = name.lastIndexOf("."), base = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot) : "";
+      while (used.has(name.toLowerCase())) name = `${base} (${n++})${ext}`;
+      used.add(name.toLowerCase());
+      await upload(`t/${code}/${randomDir()}/${name}`, f, {
+        access: "public",
+        handleUploadUrl: "/api/upload",
+        clientPayload: JSON.stringify({ code, owner }),
+        multipart: f.size > 20 * 1048576,
+        contentType: f.type || "application/octet-stream",
+        onUploadProgress: e => { const p = Math.round((done + e.loaded) / total * 100); progress(Math.min(p, 99), `Uploading… ${Math.min(p, 99)}%`); },
+      });
+      done += f.size;
+    }
+    progress(100, "Finishing…");
+    current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner }) })), owner };
+    progress(null);
+    $("outcode").textContent = current.code;
+    $("outlink").value = current.link;
     $("pick").hidden = true; $("done").hidden = false;
     $("share").hidden = !navigator.share;
-  };
-  xhr.onerror = () => { $("bar").hidden = true; $("pct").hidden = true; show($("senderr"), "Connection lost. Try again."); $("go").disabled = false; };
-  xhr.send(form);
+  } catch (e) {
+    progress(null);
+    show($("senderr"), e.message || "Upload failed. Try again.");
+    $("go").disabled = false;
+  }
 };
 $("copy").onclick = async () => {
   try { await navigator.clipboard.writeText($("outlink").value); } catch { $("outlink").select(); document.execCommand("copy"); }
@@ -161,31 +184,30 @@ function reset(){
 $("again").onclick = reset;
 $("del").onclick = async () => {
   if (!current || !confirm("Delete these files now? The code will stop working.")) return;
-  const r = await fetch("/api/transfer/" + current.code, { method: "DELETE", headers: { "X-Owner": current.owner } });
+  const r = await fetch("/api/transfer?code=" + current.code, { method: "DELETE", headers: { "X-Owner": current.owner } });
   if (r.ok) reset(); else show($("senderr"), "Could not delete.");
 };
 
 $("codein").oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); };
 async function find(code){
   show($("geterr"), ""); $("found").hidden = true;
-  const r = await fetch("/api/transfer/" + encodeURIComponent(code));
+  const r = await fetch("/api/transfer?code=" + encodeURIComponent(code));
   const body = await r.json().catch(() => ({}));
   if (!r.ok) { show($("geterr"), body.error || "Not found."); return; }
   $("files").replaceChildren(...body.files.map((f, i) => {
     const a = document.createElement("a");
-    a.href = `/d/${body.code}/${i}`; a.textContent = f.name; a.download = f.name;
+    a.href = f.url; a.textContent = f.name; a.download = f.name;
     return li(a, size(f.size));
   }));
-  $("all").hidden = body.files.length < 2;
-  $("all").href = `/d/${body.code}/all.zip`;
-  const hrs = Math.max(0, (body.expires * 1000 - Date.now()) / 3600000);
+  const hrs = Math.max(0, (body.expires - Date.now()) / 3600000);
   $("expires").textContent = hrs >= 1 ? `Available for ${Math.floor(hrs)} more hour${Math.floor(hrs) === 1 ? "" : "s"}` : `Available for ${Math.ceil(hrs * 60)} more minutes`;
   $("found").hidden = false;
   if (location.pathname !== "/d/" + body.code) history.replaceState(null, "", "/d/" + body.code);
 }
 $("lookup").onsubmit = e => { e.preventDefault(); const c = $("codein").value.trim(); if (c.length === 6) find(c); else show($("geterr"), "Codes are 6 letters and numbers."); };
 
-{% if code %}tab("get");{% if not missing %} find({{ code|tojson }});{% endif %}{% endif %}
+const m = location.pathname.match(/^\/d\/([A-Za-z0-9]{6})\/?$/);
+if (m) { tab("get"); $("codein").value = m[1].toUpperCase(); find(m[1].toUpperCase()); }
 </script>
 </body>
 </html>

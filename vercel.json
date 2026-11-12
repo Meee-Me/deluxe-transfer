@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "",
+  "outputDirectory": "public",
+  "rewrites": [{ "source": "/d/:code", "destination": "/index.html" }],
+  "crons": [{ "path": "/api/cleanup", "schedule": "17 4 * * *" }],
+  "headers": [
+    { "source": "/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }] }
+  ]
+}
