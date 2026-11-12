@@ -16,7 +16,7 @@ export const GET = guarded(async function GET(request) {
     const meta = blobs.find((b) => b.pathname === `t/${code}/meta.json`);
     let expired;
     if (meta) {
-      try { expired = (await store.fetchJson(meta.url)).expires < now; } catch { expired = false; }
+      try { const e = (await store.fetchJson(meta.url)).expires; expired = e != null && e < now; } catch { expired = false; }
     } else {
       // never finished: remove once the newest piece is a day old
       expired = blobs.every((b) => now - new Date(b.uploadedAt) > 86400000) || !blobs.some((b) => FILE_PATH.test(b.pathname));

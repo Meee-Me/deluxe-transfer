@@ -141,3 +141,23 @@ test("a private store: files are served through the site, safely", async () => {
     assert.equal((await file(req("GET", `/api/file?code=ZZZZZZ&n=0`))).status, 404);
   } finally { Object.assign(lib.store, saved); }
 });
+
+test("forever: only when signed in, never expires, never cleaned up", async () => {
+  const { main } = await import("../api/_people.js");
+  const saved = main.fetch;
+  main.fetch = async (path, init = {}) => path === "/api/auth/me" && init.headers.Authorization === "Bearer good"
+    ? new Response(JSON.stringify({ user: { id: "u1", name: "A", handle: "a" }, app: "transfer" }))
+    : new Response("{}", { status: 401 });
+  try {
+    const { code, owner } = await (await create(req("POST", "/api/create"))).json();
+    blobs.set(`t/${code}/${DIR}/a.txt`, mk(`t/${code}/${DIR}/a.txt`, 1));
+    assert.equal((await finish(req("POST", "/api/finish", { code, owner, hours: "forever" }))).status, 401, "guests can't");
+    const r = await finish(req("POST", "/api/finish", { code, owner, hours: "forever" }, { authorization: "Bearer good" }));
+    assert.equal(r.status, 200);
+    assert.equal((await r.json()).expires, null);
+    assert.equal((await get(req("GET", "/api/transfer?code=" + code))).status, 200);
+    const c = await (await cleanup(req("GET", "/api/cleanup"))).json();
+    assert.ok(blobs.has(`t/${code}/meta.json`), "cleanup keeps it");
+    assert.equal(typeof c.deleted, "number");
+  } finally { main.fetch = saved; }
+});
