@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deluxe Transfer</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#14161f;--muted:#646b7d;--line:#e2e5ee;--accent:#4f46e5;--accent-ink:#fff;--soft:#eef0ff;--bad:#c62828}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1117;--card:#181b24;--ink:#eceef5;--muted:#9aa1b2;--line:#2a2f3d;--accent:#8b85ff;--accent-ink:#0f1117;--soft:#232647;--bad:#ff6b6b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:32px 16px 48px}
+h1{font-size:28px;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--muted);margin:0 0 24px}
+.tabs{display:flex;gap:4px;background:var(--line);padding:4px;border-radius:12px;margin-bottom:16px}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px;border-radius:9px;cursor:pointer}
+.tabs button[aria-selected=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px #0002}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:32px 16px;text-align:center;cursor:pointer;color:var(--muted)}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+.drop strong{color:var(--ink);display:block;font-size:18px;margin-bottom:4px}
+input[type=file]{display:none}
+ul{list-style:none;padding:0;margin:16px 0 0}
+li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+li span:last-child{color:var(--muted);flex:none}
+li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn{display:block;width:100%;margin-top:16px;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:700;background:var(--accent);color:var(--accent-ink);cursor:pointer;text-align:center;text-decoration:none}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.danger{background:none;color:var(--bad);border:1px solid var(--line)}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:16px}
+.bar div{height:100%;width:0;background:var(--accent);transition:width .15s}
+.code{font:700 40px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.15em;text-align:center;margin:8px 0}
+.link{display:flex;gap:8px;margin-top:8px}
+.link input,.codein{flex:1;min-width:0;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:12px;font:inherit}
+.codein{width:100%;text-align:center;font:700 28px ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase}
+.link button{border:0;border-radius:10px;padding:0 16px;font:inherit;font-weight:600;background:var(--soft);color:var(--ink);cursor:pointer}
+.muted{color:var(--muted);font-size:14px;text-align:center}
+.err{color:var(--bad);margin-top:12px;text-align:center}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Deluxe Transfer</h1>
+  <p class="sub">Send files with a code. Up to {{ max_mb }} MB, gone after {{ hours|round|int }} hours.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-send" aria-selected="true">Send</button>
+    <button role="tab" id="tab-get" aria-selected="false">Receive</button>
+  </div>
+
+  <section id="send" class="card">
+    <div id="pick">
+      <label class="drop" id="drop">
+        <strong>Choose files</strong>or drop them here
+        <input type="file" id="file" multiple>
+      </label>
+      <ul id="chosen"></ul>
+      <button class="btn" id="go" disabled>Send</button>
+      <div class="bar" id="bar" hidden><div></div></div>
+      <p class="muted" id="pct" hidden></p>
+    </div>
+    <div id="done" hidden>
+      <p class="muted">Share this code</p>
+      <div class="code" id="outcode"></div>
+      <p class="muted">or this link</p>
+      <div class="link"><input id="outlink" readonly><button id="copy">Copy</button></div>
+      <button class="btn" id="share" hidden>Share…</button>
+      <button class="btn ghost" id="again">Send more files</button>
+      <button class="btn danger" id="del">Delete now</button>
+    </div>
+    <p class="err" id="senderr" hidden></p>
+  </section>
+
+  <section id="get" class="card" hidden>
+    <form id="lookup">
+      <input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" value="{{ code or '' }}">
+      <button class="btn">Find files</button>
+    </form>
+    <div id="found" hidden>
+      <ul id="files"></ul>
+      <a class="btn" id="all" hidden>Download all (.zip)</a>
+      <p class="muted" id="expires"></p>
+    </div>
+    <p class="err" id="geterr" hidden>{% if missing %}No transfer with that code, or it has expired.{% endif %}</p>
+  </section>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const size = b => b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(1) + " KB" : b < 1073741824 ? (b/1048576).toFixed(1) + " MB" : (b/1073741824).toFixed(2) + " GB";
+const MAX = {{ max_mb }} * 1048576;
+let picked = [], current = null;
+
+function tab(name){
+  $("tab-send").setAttribute("aria-selected", name === "send");
+  $("tab-get").setAttribute("aria-selected", name === "get");
+  $("send").hidden = name !== "send";
+  $("get").hidden = name !== "get";
+}
+$("tab-send").onclick = () => tab("send");
+$("tab-get").onclick = () => { tab("get"); $("codein").focus(); };
+
+function show(el, text){ el.textContent = text; el.hidden = !text; }
+function li(left, right){
+  const l = document.createElement("li"), a = document.createElement("span"), b = document.createElement("span");
+  if (left instanceof Node) a.append(left); else a.textContent = left;
+  b.textContent = right; l.append(a, b); return l;
+}
+
+function choose(list){
+  picked = [...picked, ...list];
+  const total = picked.reduce((s, f) => s + f.size, 0);
+  $("chosen").replaceChildren(...picked.map(f => li(f.name, size(f.size))));
+  $("go").disabled = !picked.length || total > MAX;
+  $("go").textContent = picked.length ? `Send ${picked.length} file${picked.length > 1 ? "s" : ""} (${size(total)})` : "Send";
+  show($("senderr"), total > MAX ? `Too big: the limit is {{ max_mb }} MB.` : "");
+}
+$("file").onchange = e => { choose(e.target.files); e.target.value = ""; };
+const drop = $("drop");
+["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => choose(e.dataTransfer.files));
+
+$("go").onclick = () => {
+  const form = new FormData();
+  picked.forEach(f => form.append("files", f, f.name));
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", "/api/upload");
+  $("go").disabled = true; $("bar").hidden = false; $("pct").hidden = false; show($("senderr"), "");
+  xhr.upload.onprogress = e => {
+    if (!e.lengthComputable) return;
+    const p = Math.round(e.loaded / e.total * 100);
+    $("bar").firstElementChild.style.width = p + "%";
+    $("pct").textContent = p < 100 ? `Uploading… ${p}%` : "Finishing…";
+  };
+  xhr.onload = () => {
+    let body = {}; try { body = JSON.parse(xhr.responseText); } catch {}
+    $("bar").hidden = true; $("pct").hidden = true;
+    if (xhr.status !== 200) { show($("senderr"), body.error || "Upload failed. Try again."); $("go").disabled = false; return; }
+    current = body;
+    $("outcode").textContent = body.code;
+    $("outlink").value = body.link;
+    $("pick").hidden = true; $("done").hidden = false;
+    $("share").hidden = !navigator.share;
+  };
+  xhr.onerror = () => { $("bar").hidden = true; $("pct").hidden = true; show($("senderr"), "Connection lost. Try again."); $("go").disabled = false; };
+  xhr.send(form);
+};
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("outlink").value); } catch { $("outlink").select(); document.execCommand("copy"); }
+  $("copy").textContent = "Copied"; setTimeout(() => $("copy").textContent = "Copy", 1500);
+};
+$("share").onclick = () => navigator.share({ title: "Files for you", text: `Code: ${current.code}`, url: current.link }).catch(() => {});
+function reset(){
+  picked = []; current = null; choose([]);
+  $("bar").firstElementChild.style.width = "0";
+  $("pick").hidden = false; $("done").hidden = true;
+}
+$("again").onclick = reset;
+$("del").onclick = async () => {
+  if (!current || !confirm("Delete these files now? The code will stop working.")) return;
+  const r = await fetch("/api/transfer/" + current.code, { method: "DELETE", headers: { "X-Owner": current.owner } });
+  if (r.ok) reset(); else show($("senderr"), "Could not delete.");
+};
+
+$("codein").oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); };
+async function find(code){
+  show($("geterr"), ""); $("found").hidden = true;
+  const r = await fetch("/api/transfer/" + encodeURIComponent(code));
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) { show($("geterr"), body.error || "Not found."); return; }
+  $("files").replaceChildren(...body.files.map((f, i) => {
+    const a = document.createElement("a");
+    a.href = `/d/${body.code}/${i}`; a.textContent = f.name; a.download = f.name;
+    return li(a, size(f.size));
+  }));
+  $("all").hidden = body.files.length < 2;
+  $("all").href = `/d/${body.code}/all.zip`;
+  const hrs = Math.max(0, (body.expires * 1000 - Date.now()) / 3600000);
+  $("expires").textContent = hrs >= 1 ? `Available for ${Math.floor(hrs)} more hour${Math.floor(hrs) === 1 ? "" : "s"}` : `Available for ${Math.ceil(hrs * 60)} more minutes`;
+  $("found").hidden = false;
+  if (location.pathname !== "/d/" + body.code) history.replaceState(null, "", "/d/" + body.code);
+}
+$("lookup").onsubmit = e => { e.preventDefault(); const c = $("codein").value.trim(); if (c.length === 6) find(c); else show($("geterr"), "Codes are 6 letters and numbers."); };
+
+{% if code %}tab("get");{% if not missing %} find({{ code|tojson }});{% endif %}{% endif %}
+</script>
+</body>
+</html>
