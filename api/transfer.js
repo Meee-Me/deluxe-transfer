@@ -1,6 +1,6 @@
 // GET    /api/transfer?code=ABC123   -> the files
 // DELETE /api/transfer?code=ABC123   (header X-Owner) -> deletes it
-import { json, cleanCode, loadMeta, isOwner, deleteTransfer, publicMeta, guarded } from "./_lib.js";
+import { json, cleanCode, loadMeta, isOwner, deleteTransfer, publicMeta, guarded, store } from "./_lib.js";
 
 const codeOf = (request) => cleanCode(new URL(request.url).searchParams.get("code"));
 const missing = () => json({ error: "No transfer with that code, or it has expired." }, 404);
@@ -8,7 +8,7 @@ const missing = () => json({ error: "No transfer with that code, or it has expir
 export const GET = guarded(async function GET(request) {
   const code = codeOf(request);
   const meta = code && (await loadMeta(code));
-  return meta ? json(publicMeta(meta)) : missing();
+  return meta ? json(publicMeta(meta, new URL(request.url).origin, await store.privateFiles())) : missing();
 });
 
 export const DELETE = guarded(async function DELETE(request) {
