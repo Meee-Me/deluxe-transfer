@@ -12,14 +12,37 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 main{max-width:520px;margin:0 auto;padding:24px 16px 48px}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-h1{font-size:26px;margin:0;letter-spacing:-.02em;white-space:nowrap}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand img{width:40px;height:40px;border-radius:11px;flex:none;box-shadow:0 4px 14px #f43f5e33}
+.brand h1{font-size:21px;margin:0;letter-spacing:-.02em;line-height:1.15;white-space:nowrap}
+.brand p{margin:0;color:var(--muted);font-size:13px}
 #account{flex:none}
-.sub{color:var(--muted);margin:6px 0 20px}
+.badge{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:#f43f5e;color:#fff;font-size:12px;font-weight:800;vertical-align:1px}
+.back{border:0;background:none;color:var(--accent);font:inherit;font-weight:700;padding:0 0 12px;cursor:pointer}
+.codebox label{display:block;font-weight:700;margin-bottom:8px}
+.codeline{display:flex;gap:8px}
+.codeline .codein{flex:1;font-size:22px;padding:10px}
+.codeline .btn{width:auto;margin:0;padding:0 22px}
+.listhead{margin:24px 0 4px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+button.item{display:block;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);color:inherit;font:inherit;cursor:pointer;padding:12px 0 12px 16px;position:relative}
+button.item:first-child{border-top:0}
+.item.unread::before{content:"";position:absolute;left:2px;top:19px;width:8px;height:8px;border-radius:50%;background:#f43f5e}
+.item.unread b{font-weight:800}
+.item .line1{margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.note{color:var(--muted);font-size:14px;font-style:italic;margin-top:2px;overflow-wrap:anywhere}
+.from{background:var(--soft);border-radius:12px;padding:12px 14px;margin-bottom:6px}
+.from span{color:var(--muted);font-size:14px}
+.okhead{text-align:center;color:var(--good);font-weight:800;margin:0 0 6px}
+.dropicon{display:grid;place-items:center;width:48px;height:48px;margin:0 auto 10px;border-radius:14px;background:linear-gradient(135deg,#fb923c,#f43f5e);color:#fff}
+.dropicon svg{width:26px;height:26px}
+.drop span:last-of-type{display:block;font-size:14px}
+.drop:hover{border-color:var(--accent)}
 .tabs{display:flex;gap:4px;background:var(--line);padding:4px;border-radius:12px;margin-bottom:16px}
 .tabs button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px 4px;border-radius:9px;cursor:pointer}
 .tabs button[aria-selected=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px #0002}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 1px 3px #0000000a,0 8px 24px #0000000a}
+@media (min-width:700px){main{max-width:600px;padding-top:40px}.card{padding:28px}}
 .drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;cursor:pointer;color:var(--muted)}
 .drop.over{border-color:var(--accent);background:var(--soft)}
 .drop strong{color:var(--ink);display:block;font-size:18px;margin-bottom:2px}
@@ -96,27 +119,30 @@ h2{font-size:16px;margin:0}
 </head>
 <body>
 <main>
-  <header><h1>Deluxe Transfer</h1><div id="account"></div></header>
-  <p class="sub">Send any file with a code or a link. Up to 100 MB, kept for as long as you choose — even forever.</p>
+  <header class="top">
+    <div class="brand"><img src="/icon.svg" alt="" width="40" height="40"><div><h1>Deluxe Transfer</h1><p>Send any file to anyone</p></div></div>
+    <div id="account"></div>
+  </header>
 
-  <div class="tabs" role="tablist">
+  <nav class="tabs" role="tablist">
     <button role="tab" id="tab-send" aria-selected="true">Send</button>
-    <button role="tab" id="tab-get" aria-selected="false">Receive</button>
-    <button role="tab" id="tab-hist" aria-selected="false">History</button>
-  </div>
+    <button role="tab" id="tab-get" aria-selected="false">Inbox <span class="badge" id="badge" hidden></span></button>
+    <button role="tab" id="tab-hist" aria-selected="false">Sent</button>
+  </nav>
 
   <!-- SEND -->
   <section id="send" class="card">
     <div id="pick">
       <label class="drop" id="drop">
-        <strong>Choose files</strong>or drop them here · any file type
+        <span class="dropicon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7 9l5-5 5 5M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/></svg></span>
+        <strong>Choose files</strong><span>or drop them here · any file type · up to 100 MB</span>
         <input type="file" id="file" multiple>
       </label>
       <ul id="chosen"></ul>
 
       <label class="field" for="to1-input">Send to <small>(optional)</small></label>
-      <div class="chips" id="to1"><input id="to1-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Username or name@deluxemail.com"></div>
-      <p class="hint" id="to1-hint">Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.</p>
+      <div class="chips" id="to1"><input id="to1-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Deluxe username"></div>
+      <p class="hint" id="to1-hint"></p>
       <textarea id="note" maxlength="2000" placeholder="Message (optional)" hidden></textarea>
       <div class="signin" id="signin1" hidden><span>Sign in with Deluxe Main to send to people or keep files forever.</span><button class="mini" id="signin1-btn" type="button">Sign in</button></div>
 
@@ -132,21 +158,20 @@ h2{font-size:16px;margin:0}
     </div>
 
     <div id="done" hidden>
-      <p class="muted">Share this code</p>
+      <p class="okhead">✓ Ready to share</p>
+      <p class="muted">Code</p>
       <div class="code" id="outcode"></div>
-      <p class="muted">or this link</p>
-      <div class="link"><input id="outlink" readonly><button id="copy">Copy</button></div>
+      <div class="link"><input id="outlink" readonly aria-label="Link"><button id="copy">Copy link</button></div>
       <div class="qr" id="qr" aria-label="QR code for the link"></div>
-      <p class="muted">Scan to open on another phone</p>
-      <p class="muted when" id="outwhen"></p>
+      <p class="muted">Scan to open on another phone · <span id="outwhen"></span></p>
       <button class="btn ghost" id="share" hidden>Share…</button>
-      <div class="results" id="results" hidden><h2>Sent by Deluxe Mail</h2><ul id="resultlist"></ul></div>
+      <div class="results" id="results" hidden><h2>In their Deluxe Transfer inbox</h2><ul id="resultlist"></ul></div>
 
       <label class="field" for="to2-input">Send to more people</label>
-      <div class="chips" id="to2"><input id="to2-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Username or name@deluxemail.com"></div>
+      <div class="chips" id="to2"><input id="to2-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Deluxe username"></div>
       <p class="hint" id="to2-hint"></p>
       <textarea id="note2" maxlength="2000" placeholder="Message (optional)" hidden></textarea>
-      <button class="btn" id="mailbtn" disabled>Send by Deluxe Mail</button>
+      <button class="btn" id="mailbtn" disabled>Send</button>
       <p class="err" id="mailerr" hidden></p>
 
       <hr>
@@ -156,13 +181,21 @@ h2{font-size:16px;margin:0}
     </div>
   </section>
 
-  <!-- RECEIVE -->
+  <!-- INBOX -->
   <section id="get" class="card" hidden>
-    <form id="lookup">
-      <input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123">
-      <button class="btn">Find files</button>
-    </form>
+    <div id="inbox-home">
+      <form id="lookup" class="codebox">
+        <label for="codein">Have a code?</label>
+        <div class="codeline"><input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123"><button class="btn">Open</button></div>
+      </form>
+      <h2 class="listhead">Sent to you</h2>
+      <div id="inbox-out" hidden><p class="muted">Sign in with Deluxe Main and files people send to your username show up here.</p><button class="btn" id="inbox-signin">Sign in with Deluxe Main</button></div>
+      <div id="inbox-list"></div>
+      <p class="muted" id="inbox-empty" hidden></p>
+    </div>
     <div id="found" hidden>
+      <button class="back" id="back" type="button">‹ Inbox</button>
+      <div class="from" id="fromline" hidden></div>
       <ul id="files"></ul>
       <button class="btn" id="zipall" hidden>Download all (.zip)</button>
       <button class="btn ghost" id="saveall" hidden>Save all to Deluxe Drive</button>
@@ -172,14 +205,13 @@ h2{font-size:16px;margin:0}
     <p class="err" id="geterr" hidden></p>
   </section>
 
-  <!-- HISTORY -->
+  <!-- SENT -->
   <section id="hist" class="card" hidden>
     <div id="hist-out" hidden>
-      <p class="muted">Sign in with Deluxe Main to keep a history of what you send and receive.</p>
+      <p class="muted">Sign in with Deluxe Main to keep a list of what you send.</p>
       <button class="btn" id="hist-signin">Sign in with Deluxe Main</button>
     </div>
     <div id="hist-in" hidden>
-      <div class="seg"><button id="seg-sent" aria-pressed="true">Sent</button><button id="seg-recv" aria-pressed="false">Received</button></div>
       <div id="hist-list"></div>
       <p class="muted" id="hist-empty" hidden></p>
     </div>
@@ -197,7 +229,7 @@ const $ = id => document.getElementById(id);
 const size = b => b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(1) + " KB" : b < 1073741824 ? (b/1048576).toFixed(1) + " MB" : (b/1073741824).toFixed(2) + " GB";
 const D = window.Deluxe;
 const me = () => (D && D.user()) || null;
-let picked = [], current = null, histView = "sent", keep = 24, uploading = null;
+let picked = [], current = null, keep = 24, uploading = null;
 const DOCS = "https://deluxe-docs-qtp5.vercel.app";
 const ext = n => { const m = /\.([a-z0-9]{1,8})$/i.exec(n || ""); return m ? m[1].toLowerCase() : ""; };
 const IMAGE = ["jpg","jpeg","png","gif","webp","avif","bmp","svg","heic","heif"];
@@ -216,7 +248,8 @@ function tab(name){
     $("tab-" + t).setAttribute("aria-selected", t === name);
     $(t).hidden = t !== name;
   }
-  if (name === "hist") loadHistory();
+  if (name === "hist") loadSent();
+  if (name === "get" && $("found").hidden) loadInbox();
 }
 $("tab-send").onclick = () => tab("send");
 $("tab-get").onclick = () => { tab("get"); $("codein").focus(); };
@@ -314,7 +347,7 @@ function refreshSend(){
   if (keep === "forever") { kh.hidden = false; kh.className = me() ? "hint" : "hint bad"; kh.textContent = me() ? "Kept until you delete it (from History or the code screen)." : "Forever needs a Deluxe account. Sign in with Deluxe Main, or pick a time."; }
   else kh.hidden = true;
   $("signin1").hidden = !((to1.list.length || keep === "forever") && !me());
-  peopleHint(to1, $("to1-hint"), to1.list.length ? "" : "Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.");
+  peopleHint(to1, $("to1-hint"), to1.list.length ? "" : "Type their Deluxe username and tap Return. It arrives in their Deluxe Transfer inbox. Add as many people as you like.");
   show($("senderr"), total > MAX ? `Too big: the limit is ${MAX_MB} MB.` : "");
 }
 document.querySelectorAll("#keep button").forEach(b => b.onclick = () => {
@@ -407,7 +440,7 @@ $("go").onclick = async () => {
     current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner, hours: keep }) })), owner, to: [] };
     const people = to1.ready().map(p => p.input);
     if (people.length) {
-      progress(100, "Sending by Deluxe Mail…");
+      progress(100, "Sending to their inbox…");
       await sendTo(people, $("note").value, false);
     }
     progress(null);
@@ -426,7 +459,7 @@ $("go").onclick = async () => {
   }
 };
 
-// Sends the current transfer to people by Deluxe Mail; shows who got it.
+// Sends the current transfer to people's Deluxe Transfer inbox; shows who got it.
 async function sendTo(inputs, note, throwOnFail = true){
   try {
     const r = await api("/api/share", { body: JSON.stringify({ code: current.code, owner: current.owner, to: inputs, note }) });
@@ -440,7 +473,7 @@ async function sendTo(inputs, note, throwOnFail = true){
 }
 function addResults(results){
   current.results = [...(current.results || []), ...results];
-  for (const r of results) if (r.ok && !current.to.includes(r.to)) current.to.push(r.to);
+  for (const r of results) if (r.ok && !current.to.includes(r.handle)) current.to.push(r.handle);
   drawResults();
   remember();
 }
@@ -449,7 +482,7 @@ function drawResults(){
   $("results").hidden = !rs.length;
   $("resultlist").replaceChildren(...rs.map(r => {
     const l = el("li");
-    l.append(el("span", r.ok ? "yes" : "no", r.ok ? `✓ ${r.name} · ${r.to}` : `✕ ${r.input}: ${r.error}`));
+    l.append(el("span", r.ok ? "yes" : "no", r.ok ? `✓ ${r.name} (@${r.handle})` : `✕ ${r.input}: ${r.error}`));
     return l;
   }));
 }
@@ -479,8 +512,8 @@ function refreshMore(){
   const n = to2.ready().length;
   $("note2").hidden = !to2.list.length;
   $("mailbtn").disabled = to2.busy() || (!n && me());
-  $("mailbtn").textContent = !me() ? "Sign in with Deluxe Main to send" : n ? `Send to ${n} ${n > 1 ? "people" : "person"}` : "Send by Deluxe Mail";
-  peopleHint(to2, $("to2-hint"), me() ? "" : "Sign in to send this to people's Deluxe Mail.");
+  $("mailbtn").textContent = !me() ? "Sign in with Deluxe Main to send" : n ? `Send to ${n} ${n > 1 ? "people" : "person"}` : "Send";
+  peopleHint(to2, $("to2-hint"), me() ? "Type a Deluxe username and tap Return." : "Sign in to send this to people's Deluxe Transfer inbox.");
 }
 $("mailbtn").onclick = async () => {
   show($("mailerr"), "");
@@ -519,11 +552,15 @@ $("del").onclick = async () => {
 let shown = null;
 $("codein").oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); };
 async function find(code){
-  show($("geterr"), ""); $("found").hidden = true; $("drivebar").hidden = true;
+  show($("geterr"), ""); $("drivebar").hidden = true;
   const r = await fetch("/api/transfer?code=" + encodeURIComponent(code));
   const body = await r.json().catch(() => ({}));
   if (!r.ok) { show($("geterr"), body.error || "Not found."); return; }
   shown = body;
+  if ($("get").hidden) tab("get");
+  $("inbox-home").hidden = true; $("found").hidden = false;
+  $("fromline").hidden = true;
+  $("saveall").textContent = "Save all to Deluxe Drive"; $("saveall").disabled = false;
   $("files").replaceChildren(...body.files.map(f => {
     const l = el("li", "frow"), line = el("div", "line"), x = ext(f.name);
     if (IMAGE.includes(x) && x !== "heic" && x !== "heif") { const img = el("img", "thumb"); img.src = plain(f.url); img.alt = ""; img.loading = "lazy"; img.onerror = () => img.replaceWith(el("span", "ficon", x)); line.append(img); }
@@ -553,13 +590,25 @@ async function find(code){
   }
   $("found").hidden = false;
   if (location.pathname !== "/d/" + body.code) history.replaceState(null, "", "/d/" + body.code);
-  // Keep it in this person's received history.
+  // In this person's inbox: show who sent it, and mark it read (or add it if they opened a code).
   if (me()) {
     D.data.get("received/" + body.code).then(old => {
-      if (!old) D.data.put("received/" + body.code, { code: body.code, link: location.origin + "/d/" + body.code, expires: body.expires, at: Date.now(), files: body.files.map(f => ({ name: f.name, size: f.size })) });
+      if (old && old.from) {
+        const who = el("div", "", ""); who.append(el("b", "", old.from.name), el("span", "", ` @${old.from.handle} · ${when(old.at)}`));
+        $("fromline").replaceChildren(who, ...(old.note ? [el("div", "note", "“" + old.note + "”")] : []));
+        $("fromline").hidden = false;
+      }
+      if (!old) return D.data.put("received/" + body.code, { code: body.code, link: location.origin + "/d/" + body.code, expires: body.expires, at: Date.now(), files: body.files.map(f => ({ name: f.name, size: f.size })) });
+      if (old.unread) return D.data.put("received/" + body.code, { ...old, unread: false }).then(refreshBadge);
     }).catch(() => {});
   }
 }
+$("back").onclick = () => {
+  $("found").hidden = true; $("inbox-home").hidden = false; show($("geterr"), "");
+  if (location.pathname !== "/") history.replaceState(null, "", "/");
+  $("codein").value = "";
+  loadInbox();
+};
 $("lookup").onsubmit = e => { e.preventDefault(); const c = $("codein").value.trim(); if (c.length === 6) find(c); else show($("geterr"), "Codes are 6 letters and numbers."); };
 $("saveall").onclick = () => saveToDrive(shown.files.filter(f => !f.saved), shown.files.filter(f => !f.saved).map(f => f.button).concat($("saveall")));
 
@@ -628,47 +677,77 @@ async function saveToDrive(files, buttons){
   show($("geterr"), failed);
 }
 
-/* ---------------- history ---------------- */
+/* ---------------- inbox and sent ---------------- */
 $("hist-signin").onclick = signIn;
-$("seg-sent").onclick = () => { histView = "sent"; loadHistory(); };
-$("seg-recv").onclick = () => { histView = "received"; loadHistory(); };
+$("inbox-signin").onclick = signIn;
 const when = t => new Date(t).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-async function loadHistory(){
+const isLive = t => t.expires == null || t.expires > Date.now();
+const title = t => { const f = t.files || []; return f.length ? f[0].name + (f.length > 1 ? ` +${f.length - 1} more` : "") : "Code " + t.code; };
+const totalSize = t => (t.files || []).reduce((s, f) => s + (f.size || 0), 0);
+async function listMine(prefix){
+  return (await D.data.list({ prefix, limit: 200 })).map(i => i.value).filter(Boolean).sort((a, b) => (b.at || 0) - (a.at || 0));
+}
+
+// The count of new transfers on the Inbox tab.
+function setBadge(n){ $("badge").textContent = n > 9 ? "9+" : String(n); $("badge").hidden = !n; document.title = n ? `(${n}) Deluxe Transfer` : "Deluxe Transfer"; }
+async function refreshBadge(){
+  if (!me()) { setBadge(0); return; }
+  try { setBadge((await listMine("received/")).filter(t => t.unread && isLive(t)).length); } catch {}
+}
+
+async function loadInbox(){
+  const signed = !!me();
+  $("inbox-out").hidden = signed;
+  $("inbox-list").replaceChildren();
+  if (!signed) { show($("inbox-empty"), ""); return; }
+  show($("inbox-empty"), "Loading…");
+  let items = [];
+  try { items = await listMine("received/"); } catch (e) { show($("inbox-empty"), e.message); return; }
+  setBadge(items.filter(t => t.unread && isLive(t)).length);
+  show($("inbox-empty"), items.length ? "" : "Nothing yet. When someone sends files to your username, they show up here.");
+  $("inbox-list").replaceChildren(...items.map(t => {
+    const live = isLive(t);
+    const box = el(live ? "button" : "div", "item" + (t.unread && live ? " unread" : "") + (live ? " tap" : ""));
+    if (live) { box.type = "button"; box.onclick = () => find(t.code); }
+    const top = el("div", "top");
+    top.append(el("b", "", t.from ? t.from.name : "Opened with a code"),
+      el("span", "pill" + (live ? "" : " old"), t.unread && live ? "New" : t.expires == null ? "Forever" : live ? "Active" : "Expired"));
+    box.append(top, el("div", "line1", title(t)));
+    if (t.note) box.append(el("div", "note", "“" + t.note + "”"));
+    box.append(el("div", "meta", `${when(t.at)} · ${size(totalSize(t))}`));
+    return box;
+  }));
+}
+
+async function loadSent(){
   const signed = !!me();
   $("hist-out").hidden = signed; $("hist-in").hidden = !signed;
   if (!signed) return;
-  $("seg-sent").setAttribute("aria-pressed", histView === "sent");
-  $("seg-recv").setAttribute("aria-pressed", histView === "received");
   show($("hist-empty"), "Loading…");
   $("hist-list").replaceChildren();
   let items = [];
-  try { items = (await D.data.list({ prefix: histView + "/", limit: 200 })).map(i => i.value).filter(Boolean); }
-  catch (e) { show($("hist-empty"), e.message); return; }
-  items.sort((a, b) => (b.at || 0) - (a.at || 0));
-  show($("hist-empty"), items.length ? "" : histView === "sent" ? "Nothing sent yet." : "Nothing received yet.");
+  try { items = await listMine("sent/"); } catch (e) { show($("hist-empty"), e.message); return; }
+  show($("hist-empty"), items.length ? "" : "Nothing sent yet.");
   $("hist-list").replaceChildren(...items.map(t => {
-    const live = t.expires == null || t.expires > Date.now();
+    const live = isLive(t);
     const box = el("div", "item");
     const top = el("div", "top");
-    const files = t.files || [];
-    top.append(el("b", "", files.length ? files[0].name + (files.length > 1 ? ` +${files.length - 1} more` : "") : t.code),
-      el("span", "pill" + (live ? "" : " old"), t.expires == null ? "Forever" : live ? "Active" : "Expired"));
-    const total = files.reduce((s, f) => s + (f.size || 0), 0);
-    const who = histView === "sent" ? (t.to && t.to.length ? "To " + t.to.join(", ") : "Shared by code") : (t.from ? "From " + t.from.name : "Opened with code");
-    box.append(top, el("div", "meta", `${when(t.at)} · ${size(total)} · Code ${t.code}`), el("div", "meta", who));
+    top.append(el("b", "", title(t)), el("span", "pill" + (live ? "" : " old"), t.expires == null ? "Forever" : live ? "Active" : "Expired"));
+    const who = t.to && t.to.length ? "To " + t.to.map(h => "@" + h.replace(/@.*/, "")).join(", ") : "Shared by code";
+    box.append(top, el("div", "meta", `${when(t.at)} · ${size(totalSize(t))} · Code ${t.code}`), el("div", "meta", who));
     const acts = el("div", "acts");
     if (live) {
       const open = el("a", "mini", "Open"); open.href = "/d/" + t.code; acts.append(open);
       const copy = el("button", "mini", "Copy link"); copy.onclick = async () => { try { await navigator.clipboard.writeText(t.link); copy.textContent = "Copied"; } catch {} };
       acts.append(copy);
+      if (t.owner) {
+        const del = el("button", "mini", "Delete now");
+        del.onclick = async () => { if (!confirm("Delete these files now? The code will stop working.")) return; try { await deleteTransfer(t.code, t.owner); loadSent(); } catch (e) { alert(e.message); } };
+        acts.append(del);
+      }
     }
-    if (histView === "sent" && live && t.owner) {
-      const del = el("button", "mini", "Delete now");
-      del.onclick = async () => { if (!confirm("Delete these files now? The code will stop working.")) return; try { await deleteTransfer(t.code, t.owner); loadHistory(); } catch (e) { alert(e.message); } };
-      acts.append(del);
-    }
-    const forget = el("button", "mini", "Remove");
-    forget.onclick = async () => { await D.data.remove(histView + "/" + t.code).catch(() => {}); loadHistory(); };
+    const forget = el("button", "mini", "Remove from list");
+    forget.onclick = async () => { await D.data.remove("sent/" + t.code).catch(() => {}); loadSent(); };
     acts.append(forget);
     box.append(acts);
     return box;
@@ -678,8 +757,12 @@ async function loadHistory(){
 /* ---------------- start ---------------- */
 if (D) {
   D.button($("account"));
-  const changed = () => { refreshSend(); refreshMore(); if (!$("hist").hidden) loadHistory(); to1.recheck(); to2.recheck(); };
+  const changed = () => { refreshSend(); refreshMore(); refreshBadge(); if (!$("hist").hidden) loadSent(); if (!$("get").hidden && $("found").hidden) loadInbox(); to1.recheck(); to2.recheck(); };
   D.onChange(changed);
+  D.ready.then(refreshBadge);
+  // New transfers can arrive at any time: check now and then while the page is open.
+  setInterval(() => { if (document.visibilityState === "visible") refreshBadge(); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refreshBadge(); });
 }
 refreshSend();
 try {

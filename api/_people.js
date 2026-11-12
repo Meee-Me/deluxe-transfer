@@ -1,5 +1,4 @@
-// Deluxe accounts and Deluxe Mail, through Deluxe Main.
-import { randomUUID } from "node:crypto";
+// Deluxe accounts and Deluxe Transfer inboxes, through Deluxe Main.
 
 const MAIN = String(process.env.MAIN_URL || "https://deluxe-drive.deluxelordd.workers.dev/main").replace(/\/+$/, "");
 export const DOMAIN = String(process.env.MAIL_DOMAIN || "deluxemail.com").toLowerCase().replace(/^@/, "");
@@ -45,7 +44,7 @@ export function parseRecipient(input) {
   if (!text) return { error: "Type a username or a Deluxe Mail address." };
   if (text.includes("@")) {
     const [local, domain] = text.toLowerCase().split("@");
-    if (domain !== DOMAIN) return { error: `${text} isn't a Deluxe Mail address. Only @${DOMAIN} people can be sent to.` };
+    if (domain !== DOMAIN) return { error: `${text} isn't a Deluxe address. Type their Deluxe username (or name@${DOMAIN}).` };
     text = local;
   }
   const handle = handleFor(text);
@@ -66,14 +65,6 @@ async function put(accountId, app, key, value) {
     body: JSON.stringify({ value }),
   });
   if (!r.ok) throw fail(`Deluxe Main could not save that (${r.status}).`, 502);
-}
-
-// A new Deluxe Mail message, stored the way Deluxe Mail stores its own.
-export async function deliverMail(accountId, folder, msg) {
-  const key = `${folder}/${String(9999999999999 - Date.now()).padStart(13, "0")}-${randomUUID()}`;
-  await put(accountId, "mail", key, {
-    id: key.split("-").slice(1).join("-"), key, folder, date: Date.now(), read: folder !== "inbox", starred: false, ...msg,
-  });
 }
 
 // Deluxe Transfer's own history for that person.

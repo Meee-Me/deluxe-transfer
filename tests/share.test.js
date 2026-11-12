@@ -54,34 +54,27 @@ test("every way of writing someone", () => {
   for (const input of ["friend.one", "@friend.one", "Friend.One@deluxemail.com", "Friend One <friend.one@deluxemail.com>", "mailto:friend.one@deluxemail.com", "Friend One", " 'friend.one' "]) {
     assert.deepEqual(parseRecipient(input), { handle: "friend.one" }, input);
   }
-  assert.match(parseRecipient("someone@gmail.com").error, /isn't a Deluxe Mail address/);
+  assert.match(parseRecipient("someone@gmail.com").error, /isn't a Deluxe address/);
   assert.ok(parseRecipient("").error);
 });
 
-test("sends to several people: Deluxe Mail, Sent copies and their history", async () => {
+test("sends to several people's Deluxe Transfer inbox, no mail", async () => {
   saved = [];
   const r = await send({ code: "abc234", owner, to: ["Friend.One@deluxemail.com", "@shivad.sujith", "friend.one", "nobody.here"], note: "Here you go" });
   assert.equal(r.status, 200);
   const d = await r.json();
   assert.equal(d.sent, 2);
-  assert.deepEqual(d.results.map((x) => [x.ok, x.to || x.error]), [
-    [true, "friend.one@deluxemail.com"], [true, "shivad.sujith@deluxemail.com"], [false, "Nobody is called nobody.here."],
+  assert.deepEqual(d.results.map((x) => [x.ok, x.handle || x.error]), [
+    [true, "friend.one"], [true, "shivad.sujith"], [false, "Nobody is called nobody.here."],
   ]);
-  const mail = mailOf("mail");
-  const inbox = mail.find((m) => m.account === "u2" && m.value.folder === "inbox");
-  assert.match(inbox.key, /^inbox\/[0-9]{13}-[0-9A-Za-z-]+$/);
-  assert.equal(inbox.value.key, inbox.key);
-  assert.equal(inbox.value.read, false);
-  assert.equal(inbox.value.from, "Shivad Sujith <shivad.sujith@deluxemail.com>");
-  assert.equal(inbox.value.subject, "Shivad Sujith sent you photo.jpg");
-  assert.match(inbox.value.body, /^Here you go\n/);
-  assert.match(inbox.value.body, /https:\/\/deluxe-transfer\.vercel\.app\/d\/ABC234/);
-  assert.match(inbox.value.body, /Code: ABC234/);
-  assert.equal(mail.filter((m) => m.value.folder === "sent" && m.account === "u1").length, 2);
-  const hist = mailOf("transfer").find((x) => x.account === "u2");
-  assert.equal(hist.key, "received/ABC234");
-  assert.deepEqual(hist.value.from, { name: "Shivad Sujith", handle: "shivad.sujith" });
-  assert.equal(hist.value.files[0].name, "photo.jpg");
+  assert.equal(mailOf("mail").length, 0, "nothing goes to Deluxe Mail");
+  const inbox = mailOf("transfer").find((x) => x.account === "u2");
+  assert.equal(inbox.key, "received/ABC234");
+  assert.equal(inbox.value.unread, true);
+  assert.equal(inbox.value.note, "Here you go");
+  assert.deepEqual(inbox.value.from, { name: "Shivad Sujith", handle: "shivad.sujith" });
+  assert.equal(inbox.value.files[0].name, "photo.jpg");
+  assert.equal(inbox.value.link, "https://deluxe-transfer.vercel.app/d/ABC234");
 });
 
 test("lookup shows who someone is", async () => {
