@@ -3,13 +3,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bundle": "esbuild scripts/blob-upload.js --bundle --format=esm --minify --outfile=public/blob-upload.js",
+    "bundle": "esbuild scripts/lib.js --bundle --format=esm --minify --outfile=public/lib.js",
     "test": "node --test tests/*.test.js"
   },
   "dependencies": {
     "@vercel/blob": "2.9.0"
   },
   "devDependencies": {
-    "esbuild": "0.28.2"
+    "esbuild": "0.28.2",
+    "qrcode-generator": "2.0.4",
+    "fflate": "0.8.3"
   }
 }

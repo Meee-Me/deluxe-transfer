@@ -5,7 +5,11 @@ whoever has either can download them for 24 hours.
 
 - Several files at once (up to 100 MB in total), with an upload progress bar
 - 6-character code (no look-alike characters such as 0/O or 1/I) plus a share link
-- Only the sender can **Delete now**; everything else is removed after it expires
+- The sender picks how long files stay: 1 hour, 1 day, 3 days or 7 days
+- A QR code of the link, to open it on a phone nearby
+- Receivers see photo thumbnails, can open photos, videos and PDFs, open documents in Deluxe
+  Docs, and download everything as one zip
+- Uploads can be cancelled; only the sender can **Delete now**; everything else is removed after it expires
 - **Send to people** (signed in with Deluxe Main): type as many people as you like in **Send to**,
   as `name`, `@name`, `name@deluxemail.com`, `Name <name@deluxemail.com>` or their full name. Each
   shows as a chip, checked with Deluxe Main. The link and code arrive in their Deluxe Mail inbox,
@@ -36,7 +40,8 @@ Optional environment variables:
 | Name | Default | Meaning |
 |---|---|---|
 | `MAX_MB` | `100` | Biggest transfer, in MB (also change it in `public/index.html`) |
-| `EXPIRE_HOURS` | `24` | How long files stay |
+| `EXPIRE_HOURS` | `24` | How long files stay unless the sender picks otherwise |
+| `MAX_EXPIRE_HOURS` | `168` | Longest the sender may pick (1, 24, 72 or 168 hours) |
 | `MAIN_URL` | `https://deluxe-drive.deluxelordd.workers.dev/main` | The Deluxe data server |
 | `MAIL_DOMAIN` | `deluxemail.com` | Must match Deluxe Mail's `MAIL_DOMAIN` |
 | `CRON_SECRET` | — | Set any random text so only Vercel Cron can run the cleanup |
@@ -65,5 +70,5 @@ Files are stored at `t/CODE/<random 24 characters>/<file name>`, so their addres
 npm install
 npm test                 # API tests with an in-memory Blob store
 FAKE_MAIN=1 node tests/dev-server.mjs  # local server on :3000 (in-memory storage, pretend Deluxe Main)
-npm run bundle           # rebuild public/blob-upload.js after updating @vercel/blob
+npm run bundle           # rebuild public/lib.js (upload, zip and QR code libraries)
 ```

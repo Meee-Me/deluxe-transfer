@@ -80,13 +80,24 @@ h2{font-size:16px;margin:0}
 .item .meta{color:var(--muted);font-size:13px;margin-top:2px}
 .item .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .drivebar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:14px;color:var(--muted)}
+#keep{margin:0}
+.qr{width:168px;margin:16px auto 0;padding:8px;background:#fff;border-radius:12px;border:1px solid var(--line)}
+.qr svg{display:block;width:100%;height:auto}
+.when{margin-top:6px}
+.frow{display:block}
+.frow .line{display:flex;align-items:center;gap:10px}
+.thumb{width:44px;height:44px;border-radius:8px;object-fit:cover;flex:none;background:var(--line)}
+.ficon{width:44px;height:44px;border-radius:8px;flex:none;display:grid;place-items:center;background:var(--soft);color:var(--accent);font:700 11px ui-monospace,monospace;text-transform:uppercase}
+.fmain{flex:1;min-width:0;display:flex;flex-direction:column}
+.fmain .fsize{font-size:13px}
+.frow .acts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 0 54px}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
   <header><h1>Deluxe Transfer</h1><div id="account"></div></header>
-  <p class="sub">Send any file with a code. Up to 100 MB, gone after 24 hours.</p>
+  <p class="sub">Send any file with a code or a link. Up to 100 MB, kept for as long as you choose (up to 7 days).</p>
 
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-send" aria-selected="true">Send</button>
@@ -109,9 +120,13 @@ h2{font-size:16px;margin:0}
       <textarea id="note" maxlength="2000" placeholder="Message (optional)" hidden></textarea>
       <div class="signin" id="signin1" hidden><span>Sign in with Deluxe Main to send to people.</span><button class="mini" id="signin1-btn" type="button">Sign in</button></div>
 
+      <label class="field">Keep files for</label>
+      <div class="seg" id="keep"><button type="button" data-h="1" aria-pressed="false">1 hour</button><button type="button" data-h="24" aria-pressed="true">1 day</button><button type="button" data-h="72" aria-pressed="false">3 days</button><button type="button" data-h="168" aria-pressed="false">7 days</button></div>
+
       <button class="btn" id="go" disabled>Send</button>
       <div class="bar" id="bar" hidden><div></div></div>
       <p class="muted" id="pct" hidden></p>
+      <button class="btn ghost" id="cancel" hidden>Cancel upload</button>
       <p class="err" id="senderr" hidden></p>
     </div>
 
@@ -120,6 +135,9 @@ h2{font-size:16px;margin:0}
       <div class="code" id="outcode"></div>
       <p class="muted">or this link</p>
       <div class="link"><input id="outlink" readonly><button id="copy">Copy</button></div>
+      <div class="qr" id="qr" aria-label="QR code for the link"></div>
+      <p class="muted">Scan to open on another phone</p>
+      <p class="muted when" id="outwhen"></p>
       <button class="btn ghost" id="share" hidden>Share…</button>
       <div class="results" id="results" hidden><h2>Sent by Deluxe Mail</h2><ul id="resultlist"></ul></div>
 
@@ -145,6 +163,7 @@ h2{font-size:16px;margin:0}
     </form>
     <div id="found" hidden>
       <ul id="files"></ul>
+      <button class="btn" id="zipall" hidden>Download all (.zip)</button>
       <button class="btn ghost" id="saveall" hidden>Save all to Deluxe Drive</button>
       <div class="drivebar" id="drivebar" hidden><span id="drivemsg"></span><a class="mini" href="https://deluxe-drive-xi.vercel.app" target="_blank" rel="noopener">Open Drive</a></div>
       <p class="muted" id="expires"></p>
@@ -167,7 +186,7 @@ h2{font-size:16px;margin:0}
 </main>
 <script src="https://deluxe-main.vercel.app/deluxe.js" data-app="transfer"></script>
 <script type="module">
-import { upload } from "/blob-upload.js";
+import { upload, zip, qrSvg } from "/lib.js";
 
 const DRIVE_SERVER = "https://deluxe-drive.deluxelordd.workers.dev";
 const DRIVE_FOLDER = "f_deluxe_transfer";
@@ -177,7 +196,14 @@ const $ = id => document.getElementById(id);
 const size = b => b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(1) + " KB" : b < 1073741824 ? (b/1048576).toFixed(1) + " MB" : (b/1073741824).toFixed(2) + " GB";
 const D = window.Deluxe;
 const me = () => (D && D.user()) || null;
-let picked = [], current = null, histView = "sent";
+let picked = [], current = null, histView = "sent", keep = 24, uploading = null;
+const DOCS = "https://deluxe-docs-qtp5.vercel.app";
+const ext = n => { const m = /\.([a-z0-9]{1,8})$/i.exec(n || ""); return m ? m[1].toLowerCase() : ""; };
+const IMAGE = ["jpg","jpeg","png","gif","webp","avif","bmp","svg","heic","heif"];
+const MEDIA = ["mp4","mov","webm","m4v","mp3","m4a","wav","ogg","aac","flac"];
+const DOCLIKE = ["pdf","doc","docx","xls","xlsx","csv","ppt","pptx","odt","ods","odp","rtf","txt","md","json","xml","html","log","zip"];
+const plain = u => { try { const x = new URL(u); x.searchParams.delete("download"); return x.href; } catch { return u; } };
+const until = t => new Date(t).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 function show(el, text){ el.textContent = text || ""; el.hidden = !text; }
 function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -287,6 +313,10 @@ function refreshSend(){
   peopleHint(to1, $("to1-hint"), to1.list.length ? "" : "Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.");
   show($("senderr"), total > MAX ? `Too big: the limit is ${MAX_MB} MB.` : "");
 }
+document.querySelectorAll("#keep button").forEach(b => b.onclick = () => {
+  keep = Number(b.dataset.h);
+  document.querySelectorAll("#keep button").forEach(x => x.setAttribute("aria-pressed", x === b));
+});
 function choose(list){ picked = [...picked, ...list]; refreshSend(); }
 $("file").onchange = e => { choose(e.target.files); e.target.value = ""; };
 const drop = $("drop");
@@ -312,10 +342,14 @@ $("go").onclick = async () => {
   if (to1.bad().length) { show($("senderr"), "Remove the people marked in red first."); return; }
   $("go").disabled = true; show($("senderr"), "");
   const total = picked.reduce((s, f) => s + f.size, 0) || 1;
-  let done = 0;
+  let done = 0, made = null;
+  const stop = new AbortController();
+  uploading = { stop, cancel: () => stop.abort() };
+  $("cancel").hidden = false;
   try {
     progress(0, "Starting…");
     const { code, owner } = await api("/api/create");
+    made = { code, owner };
     const used = new Set();
     for (const f of picked) {
       let name = cleanName(f.name), n = 2;
@@ -328,12 +362,15 @@ $("go").onclick = async () => {
         clientPayload: JSON.stringify({ code, owner }),
         multipart: f.size > 20 * 1048576,
         contentType: f.type || "application/octet-stream",
+        abortSignal: stop.signal,
         onUploadProgress: e => { const p = Math.min(99, Math.round((done + e.loaded) / total * 100)); progress(p, `Uploading… ${p}%`); },
       });
       done += f.size;
+      if (stop.signal.aborted) throw new DOMException("Cancelled", "AbortError");
     }
+    $("cancel").hidden = true;
     progress(100, "Finishing…");
-    current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner }) })), owner, to: [] };
+    current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner, hours: keep }) })), owner, to: [] };
     const people = to1.ready().map(p => p.input);
     if (people.length) {
       progress(100, "Sending by Deluxe Mail…");
@@ -345,8 +382,13 @@ $("go").onclick = async () => {
     showDone();
   } catch (e) {
     progress(null);
-    show($("senderr"), e.message || "Upload failed. Try again.");
+    const cancelled = stop.signal.aborted;
+    // Remove whatever was already uploaded.
+    if (made && !current) fetch("/api/transfer?code=" + made.code, { method: "DELETE", headers: { "X-Owner": made.owner } }).catch(() => {});
+    show($("senderr"), cancelled ? "Upload cancelled." : e.message || "Upload failed. Try again.");
     $("go").disabled = false;
+  } finally {
+    uploading = null; $("cancel").hidden = true;
   }
 };
 
@@ -388,9 +430,12 @@ function remember(){
   }
 }
 
+$("cancel").onclick = () => { if (uploading) uploading.cancel(); };
 function showDone(){
   $("outcode").textContent = current.code;
   $("outlink").value = current.link;
+  try { $("qr").innerHTML = qrSvg(current.link); } catch { $("qr").hidden = true; }
+  $("outwhen").textContent = "Available until " + until(current.expires);
   $("pick").hidden = true; $("done").hidden = false;
   $("share").hidden = !navigator.share;
   drawResults(); refreshMore();
@@ -446,17 +491,29 @@ async function find(code){
   if (!r.ok) { show($("geterr"), body.error || "Not found."); return; }
   shown = body;
   $("files").replaceChildren(...body.files.map(f => {
-    const l = el("li");
+    const l = el("li", "frow"), line = el("div", "line"), x = ext(f.name);
+    if (IMAGE.includes(x) && x !== "heic" && x !== "heif") { const img = el("img", "thumb"); img.src = plain(f.url); img.alt = ""; img.loading = "lazy"; img.onerror = () => img.replaceWith(el("span", "ficon", x)); line.append(img); }
+    else line.append(el("span", "ficon", x || "file"));
+    const mainCol = el("div", "fmain");
     const a = el("a", "fname", f.name); a.href = f.url; a.download = f.name;
+    mainCol.append(a, el("span", "fsize", size(f.size)));
+    line.append(mainCol);
+    const acts = el("div", "acts");
+    const dl = el("a", "mini", "Download"); dl.href = f.url; dl.download = f.name; acts.append(dl);
+    if (IMAGE.includes(x) || MEDIA.includes(x) || x === "pdf") { const o = el("a", "mini", "Open"); o.href = plain(f.url); o.target = "_blank"; o.rel = "noopener"; acts.append(o); }
+    if (DOCLIKE.includes(x)) { const o = el("a", "mini", "Open in Docs"); o.href = `${DOCS}/?${new URLSearchParams({ url: plain(f.url), name: f.name })}`; o.target = "_blank"; o.rel = "noopener"; acts.append(o); }
     const b = el("button", "mini", "Save to Drive"); b.type = "button";
     b.onclick = () => saveToDrive([f], [b]);
-    f.button = b;
-    l.append(a, el("span", "fsize", size(f.size)), b);
+    f.button = b; acts.append(b);
+    l.append(line, acts);
     return l;
   }));
   $("saveall").hidden = body.files.length < 2;
-  const hrs = Math.max(0, (body.expires - Date.now()) / 3600000);
-  $("expires").textContent = hrs >= 1 ? `Available for ${Math.floor(hrs)} more hour${Math.floor(hrs) === 1 ? "" : "s"}` : `Available for ${Math.ceil(hrs * 60)} more minutes`;
+  $("zipall").hidden = body.files.length < 2;
+  $("zipall").disabled = false; $("zipall").textContent = "Download all (.zip)";
+  const mins = Math.max(0, (body.expires - Date.now()) / 60000);
+  const left = mins >= 2880 ? `${Math.floor(mins / 1440)} days left` : mins >= 120 ? `${Math.floor(mins / 60)} hours left` : `${Math.ceil(mins)} minutes left`;
+  $("expires").textContent = `Available until ${until(body.expires)} · ${left}`;
   $("found").hidden = false;
   if (location.pathname !== "/d/" + body.code) history.replaceState(null, "", "/d/" + body.code);
   // Keep it in this person's received history.
@@ -468,6 +525,28 @@ async function find(code){
 }
 $("lookup").onsubmit = e => { e.preventDefault(); const c = $("codein").value.trim(); if (c.length === 6) find(c); else show($("geterr"), "Codes are 6 letters and numbers."); };
 $("saveall").onclick = () => saveToDrive(shown.files.filter(f => !f.saved), shown.files.filter(f => !f.saved).map(f => f.button).concat($("saveall")));
+
+/* ---------------- download all ---------------- */
+$("zipall").onclick = async () => {
+  const btn = $("zipall"); btn.disabled = true;
+  try {
+    const parts = {};
+    let i = 0;
+    for (const f of shown.files) {
+      btn.textContent = `Getting files… ${++i}/${shown.files.length}`;
+      const r = await fetch(plain(f.url));
+      if (!r.ok) throw new Error(`${f.name} could not be downloaded.`);
+      parts[f.name] = [new Uint8Array(await r.arrayBuffer()), { level: 0 }];
+    }
+    btn.textContent = "Making the zip…";
+    const data = await new Promise((ok, bad) => zip(parts, (err, out) => err ? bad(err) : ok(out)));
+    const a = el("a"); a.href = URL.createObjectURL(new Blob([data], { type: "application/zip" }));
+    a.download = `deluxe-transfer-${shown.code}.zip`; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    btn.textContent = "Downloaded ✓";
+  } catch (e) { show($("geterr"), e.message || "Could not make the zip."); btn.textContent = "Download all (.zip)"; }
+  btn.disabled = false;
+};
 
 /* ---------------- save to Deluxe Drive ---------------- */
 // Adds the files to the person's own Deluxe Drive, in a "Deluxe Transfer" folder.

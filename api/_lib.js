@@ -5,6 +5,9 @@ import * as blob from "@vercel/blob";
 export const MAX_MB = Number(process.env.MAX_MB || 100);
 export const MAX_BYTES = MAX_MB * 1024 * 1024;
 export const EXPIRE_HOURS = Number(process.env.EXPIRE_HOURS || 24);
+// How long a sender may keep files (hours): the default, or one of these.
+export const KEEP_CHOICES = [1, 24, 72, 168].filter((h) => h <= Number(process.env.MAX_EXPIRE_HOURS || 168));
+export const keepHours = (asked) => (KEEP_CHOICES.includes(Number(asked)) ? Number(asked) : EXPIRE_HOURS);
 export const MAX_FILES = 50;
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I
 const CODE_LEN = 6;
