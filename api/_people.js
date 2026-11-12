@@ -9,9 +9,12 @@ export const main = { fetch: (path, init) => fetch(MAIN + path, init) };
 
 const fail = (message, status) => Object.assign(new Error(message), { status });
 
+// Spaces or a line break pasted around the key are ignored.
+const appKey = () => String(process.env.MAIN_APP_KEY || "").trim();
+
 function appHeaders(accountId, extra = {}) {
-  if (!process.env.MAIN_APP_KEY) throw fail("Sending to people isn't switched on yet: MAIN_APP_KEY is missing on Vercel.", 503);
-  return { Authorization: "App " + process.env.MAIN_APP_KEY, "X-Deluxe-App": "transfer", ...(accountId ? { "X-Deluxe-Account": accountId } : {}), ...extra };
+  if (!appKey()) throw fail("Sending to people isn't switched on yet: MAIN_APP_KEY is missing on Vercel.", 503);
+  return { Authorization: "App " + appKey(), "X-Deluxe-App": "transfer", ...(accountId ? { "X-Deluxe-Account": accountId } : {}), ...extra };
 }
 
 // The person signed in on this page (with Deluxe Main), or null.

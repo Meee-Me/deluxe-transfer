@@ -5,6 +5,6 @@ export const GET = guarded(async function GET() {
   return json({
     ok: true,
     storage: !!process.env.BLOB_READ_WRITE_TOKEN,
-    deluxeMail: !!process.env.MAIN_APP_KEY,
+    deluxeMail: !!String(process.env.MAIN_APP_KEY || "").trim(),
   });
 });

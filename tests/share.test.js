@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 
 process.env.BLOB_READ_WRITE_TOKEN ||= "vercel_blob_rw_teststore_secretsecretsecret";
-process.env.MAIN_APP_KEY = "transfer-key";
+process.env.MAIN_APP_KEY = "  transfer-key\n";
 const lib = await import("../api/_lib.js");
 const { POST: share, main } = await import("../api/share.js");
 
