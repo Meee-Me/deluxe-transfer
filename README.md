@@ -26,10 +26,10 @@ Settings you can change (environment variables):
 | `EXPIRE_HOURS` | `24` | How long files stay |
 | `DATA_DIR` | `./data` | Where files are kept |
 
-**Free plan note:** Render's free plan wipes the disk whenever the service restarts or
-redeploys, and puts the service to sleep after 15 idle minutes. Sleeping alone keeps files,
-but a restart or redeploy deletes the files waiting there. To keep files across restarts, use a paid
-plan with a persistent disk and set `DATA_DIR` to the disk's mount path.
+**Free plan note:** Render's free plan has no lasting disk. Files can disappear before the
+24 hours are up when the service redeploys, restarts, or wakes after sleeping (it sleeps after
+15 idle minutes). To keep files the full time, use a paid plan with a persistent disk and set
+`DATA_DIR` to the disk's mount path.
 
 ## Run locally
 
