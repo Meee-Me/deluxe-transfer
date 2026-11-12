@@ -35,10 +35,28 @@ export function cleanCode(code) {
   return code.length === CODE_LEN && [...code].every((c) => CODE_CHARS.includes(c)) ? code : null;
 }
 
+const NO_STORAGE =
+  "Storage isn't connected yet. In Vercel, open this project's Storage tab, create a Blob store (Public) and connect it, then redeploy.";
+
 function secret() {
   const s = process.env.TRANSFER_SECRET || process.env.BLOB_READ_WRITE_TOKEN;
-  if (!s) throw new Error("No Blob store connected (BLOB_READ_WRITE_TOKEN is missing).");
+  if (!s) throw Object.assign(new Error(NO_STORAGE), { status: 503 });
   return s;
+}
+
+// Wraps an API handler so every failure answers with a message people can act on.
+export function guarded(fn) {
+  return async (request) => {
+    try {
+      return await fn(request);
+    } catch (e) {
+      const msg = String((e && e.message) || "");
+      console.error(request.method, request.url, e);
+      if (/blob credentials|read-write token|BLOB_READ_WRITE_TOKEN/i.test(msg)) return json({ error: NO_STORAGE, code: "no-storage" }, 503);
+      if (e && e.status) return json({ error: msg }, e.status);
+      return json({ error: "The server had a problem: " + (msg.replace(/^Vercel Blob: /, "") || "unknown error") }, 500);
+    }
+  };
 }
 
 // The sender's key for a transfer: lets them upload into it and delete it.

@@ -1,7 +1,7 @@
 // GET /api/cleanup  Run daily by Vercel Cron: deletes expired transfers and abandoned uploads.
-import { json, listAll, store, deleteTransfer, FILE_PATH } from "./_lib.js";
+import { json, listAll, store, deleteTransfer, FILE_PATH, guarded } from "./_lib.js";
 
-export async function GET(request) {
+export const GET = guarded(async function GET(request) {
   const want = process.env.CRON_SECRET;
   if (want && request.headers.get("authorization") !== `Bearer ${want}`) return json({ error: "Not allowed." }, 401);
   const byCode = new Map();
@@ -24,4 +24,4 @@ export async function GET(request) {
     if (expired) deleted += await deleteTransfer(code);
   }
   return json({ checked: byCode.size, deleted });
-}
+});

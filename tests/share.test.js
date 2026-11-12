@@ -30,8 +30,9 @@ main.fetch = async (path, init = {}) => {
     const a = accounts[decodeURIComponent(path.split("=")[1])];
     return a ? reply(200, { user: a }) : reply(404, {});
   }
-  if (path.startsWith("/api/data/mail/") && init.method === "PUT") {
-    saved.push({ account: h["X-Deluxe-Account"], key: path.slice(15), value: JSON.parse(init.body).value });
+  if (/^\/api\/data\/(mail|transfer)\//.test(path) && init.method === "PUT") {
+    const [, , , app, ...rest] = path.split("/");
+    saved.push({ app, account: h["X-Deluxe-Account"], key: rest.join("/"), value: JSON.parse(init.body).value });
     return reply(200, { ok: true });
   }
   return reply(404, {});
@@ -44,31 +45,50 @@ const send = (body, token = "tok-shivad") =>
     headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
   }));
 
-test("sends the link to a Deluxe Mail inbox, with a Sent copy", async () => {
+const { POST: lookup } = await import("../api/lookup.js");
+const { parseRecipient } = await import("../api/_people.js");
+const mailOf = (app) => saved.filter((x) => x.app === app);
+
+test("every way of writing someone", () => {
+  for (const input of ["friend.one", "@friend.one", "Friend.One@deluxemail.com", "Friend One <friend.one@deluxemail.com>", "mailto:friend.one@deluxemail.com", "Friend One", " 'friend.one' "]) {
+    assert.deepEqual(parseRecipient(input), { handle: "friend.one" }, input);
+  }
+  assert.match(parseRecipient("someone@gmail.com").error, /isn't a Deluxe Mail address/);
+  assert.ok(parseRecipient("").error);
+});
+
+test("sends to several people: Deluxe Mail, Sent copies and their history", async () => {
   saved = [];
-  const r = await send({ code: "abc234", owner, to: "Friend.One@deluxemail.com", note: "Here you go" });
+  const r = await send({ code: "abc234", owner, to: ["Friend.One@deluxemail.com", "@shivad.sujith", "friend.one", "nobody.here"], note: "Here you go" });
   assert.equal(r.status, 200);
-  assert.equal((await r.json()).to, "friend.one@deluxemail.com");
-  const [inbox, sent] = saved;
-  assert.equal(inbox.account, "u2");
+  const d = await r.json();
+  assert.equal(d.sent, 2);
+  assert.deepEqual(d.results.map((x) => [x.ok, x.to || x.error]), [
+    [true, "friend.one@deluxemail.com"], [true, "shivad.sujith@deluxemail.com"], [false, "Nobody is called nobody.here."],
+  ]);
+  const mail = mailOf("mail");
+  const inbox = mail.find((m) => m.account === "u2" && m.value.folder === "inbox");
   assert.match(inbox.key, /^inbox\/[0-9]{13}-[0-9A-Za-z-]+$/);
   assert.equal(inbox.value.key, inbox.key);
-  assert.equal(inbox.value.folder, "inbox");
   assert.equal(inbox.value.read, false);
   assert.equal(inbox.value.from, "Shivad Sujith <shivad.sujith@deluxemail.com>");
   assert.equal(inbox.value.subject, "Shivad Sujith sent you photo.jpg");
   assert.match(inbox.value.body, /^Here you go\n/);
   assert.match(inbox.value.body, /https:\/\/deluxe-transfer\.vercel\.app\/d\/ABC234/);
   assert.match(inbox.value.body, /Code: ABC234/);
-  assert.equal(sent.account, "u1");
-  assert.equal(sent.value.folder, "sent");
-  assert.equal(sent.value.read, true);
+  assert.equal(mail.filter((m) => m.value.folder === "sent" && m.account === "u1").length, 2);
+  const hist = mailOf("transfer").find((x) => x.account === "u2");
+  assert.equal(hist.key, "received/ABC234");
+  assert.deepEqual(hist.value.from, { name: "Shivad Sujith", handle: "shivad.sujith" });
+  assert.equal(hist.value.files[0].name, "photo.jpg");
 });
 
-test("a plain name works too", async () => {
-  saved = [];
-  assert.equal((await send({ code: "ABC234", owner, to: "friend.one" })).status, 200);
-  assert.equal(saved.length, 2);
+test("lookup shows who someone is", async () => {
+  const ask = (to, token = "tok-shivad") => lookup(new Request("https://x.test/api/lookup", { method: "POST", body: JSON.stringify({ to }), headers: token ? { authorization: "Bearer " + token } : {} }));
+  assert.deepEqual(await (await ask("Friend One")).json(), { handle: "friend.one", name: "Friend One", address: "friend.one@deluxemail.com" });
+  assert.equal((await ask("nobody.here")).status, 404);
+  assert.equal((await ask("x@gmail.com")).status, 400);
+  assert.equal((await ask("friend.one", null)).status, 401);
 });
 
 test("refusals", async () => {
@@ -78,7 +98,7 @@ test("refusals", async () => {
   assert.equal((await send({ code: "ABC234", owner: "x", to: "friend.one" })).status, 403);
   assert.equal((await send({ code: "ZZZ234", owner: lib.ownerKey("ZZZ234"), to: "friend.one" })).status, 404);
   assert.equal((await send({ code: "ABC234", owner, to: "someone@gmail.com" })).status, 400);
-  assert.equal((await send({ code: "ABC234", owner, to: "nobody.here" })).status, 404);
+  assert.equal((await send({ code: "ABC234", owner, to: "nobody.here" })).status, 400);
   assert.equal((await send({ code: "ABC234", owner, to: "" })).status, 400);
   assert.equal(saved.length, 0);
 });

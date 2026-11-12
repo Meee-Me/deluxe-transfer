@@ -1,8 +1,8 @@
 // POST /api/finish {code, owner}  Seals a transfer once its files are uploaded.
 import { json, cleanCode, isOwner, listAll, prefix, metaPath, metaHead, deleteTransfer,
-  publicMeta, store, FILE_PATH, MAX_BYTES, MAX_MB, MAX_FILES, EXPIRE_HOURS } from "./_lib.js";
+  publicMeta, store, FILE_PATH, MAX_BYTES, MAX_MB, MAX_FILES, EXPIRE_HOURS, guarded } from "./_lib.js";
 
-export async function POST(request) {
+export const POST = guarded(async function POST(request) {
   const { code: raw, owner } = await request.json().catch(() => ({}));
   const code = cleanCode(raw);
   if (!code || !isOwner(code, owner)) return json({ error: "Not allowed." }, 403);
@@ -32,4 +32,4 @@ export async function POST(request) {
   });
   const link = new URL("/d/" + code, request.url).href;
   return json({ ...publicMeta(meta), link });
-}
+});
