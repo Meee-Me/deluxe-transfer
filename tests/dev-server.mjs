@@ -1,0 +1,40 @@
+// Local stand-in for Vercel: serves public/, runs api/*.js, keeps "Blob" files in memory.
+// node tests/dev-server.mjs  -> http://localhost:3000   (uploads need the browser test's fake Blob API)
+import http from "node:http";
+import { readFile } from "node:fs/promises";
+process.env.BLOB_READ_WRITE_TOKEN ||= "vercel_blob_rw_local_secretsecretsecret";
+const lib = await import("../api/_lib.js");
+const blobs = new Map();
+const PORT = Number(process.env.PORT || 3000);
+const BASE = `http://localhost:${PORT}/_blob/`;
+const nf = () => Object.assign(new Error("not found"), { name: "BlobNotFoundError" });
+const rec = (p, body) => ({ pathname: p, size: body.length, body, uploadedAt: new Date(), url: BASE + p, downloadUrl: BASE + p + "?download=1" });
+Object.assign(lib.store, {
+  head: async (p) => { if (!blobs.has(p)) throw nf(); return blobs.get(p); },
+  list: async ({ prefix }) => ({ blobs: [...blobs.values()].filter((b) => b.pathname.startsWith(prefix)), hasMore: false }),
+  put: async (p, body) => { blobs.set(p, rec(p, Buffer.from(body))); },
+  del: async (urls) => { for (const [k, b] of blobs) if (urls.includes(b.url)) blobs.delete(k); },
+  fetchJson: async (url) => JSON.parse(blobs.get(url.slice(BASE.length)).body),
+});
+const routes = {};
+for (const n of ["create", "upload", "finish", "transfer", "cleanup"]) routes[n] = await import(`../api/${n}.js`);
+
+http.createServer(async (req, res) => {
+  res.setHeader("access-control-allow-origin", "*"); res.setHeader("access-control-allow-headers", "*"); res.setHeader("access-control-allow-methods", "*");
+  if (req.method === "OPTIONS") return res.end();
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  const chunks = []; for await (const c of req) chunks.push(c);
+  const body = Buffer.concat(chunks);
+  if (url.pathname === "/_blob_put" || (url.pathname.startsWith("/_blob_api") && req.method === "PUT")) { const r = rec(url.searchParams.get("pathname"), body); blobs.set(r.pathname, r); res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ url: r.url, downloadUrl: r.downloadUrl, pathname: r.pathname, contentType: "application/octet-stream", contentDisposition: "attachment" })); }
+  if (url.pathname.startsWith("/_blob/")) { const b = blobs.get(decodeURIComponent(url.pathname.slice(7))); res.statusCode = b ? 200 : 404; return res.end(b ? b.body : "gone"); }
+  const api = /^\/api\/(\w+)$/.exec(url.pathname);
+  if (api && routes[api[1]]?.[req.method]) {
+    const r = await routes[api[1]][req.method](new Request(url, { method: req.method, headers: req.headers, body: body.length ? body : undefined }));
+    res.writeHead(r.status, Object.fromEntries(r.headers)); return res.end(Buffer.from(await r.arrayBuffer()));
+  }
+  const file = url.pathname === "/" || /^\/d\/[^/]+$/.test(url.pathname) ? "index.html" : url.pathname.slice(1);
+  try {
+    const data = await readFile(new URL("../public/" + file, import.meta.url));
+    res.setHeader("content-type", file.endsWith(".js") ? "text/javascript" : "text/html"); res.end(data);
+  } catch { res.statusCode = 404; res.end("not found"); }
+}).listen(PORT, () => console.log("http://localhost:" + PORT));
