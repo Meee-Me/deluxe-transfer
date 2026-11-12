@@ -80,7 +80,7 @@ h2{font-size:16px;margin:0}
 .item .meta{color:var(--muted);font-size:13px;margin-top:2px}
 .item .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .drivebar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:14px;color:var(--muted)}
-#keep{margin:0}
+#keep{margin:0;flex-wrap:wrap}
 .qr{width:168px;margin:16px auto 0;padding:8px;background:#fff;border-radius:12px;border:1px solid var(--line)}
 .qr svg{display:block;width:100%;height:auto}
 .when{margin-top:6px}
@@ -97,7 +97,7 @@ h2{font-size:16px;margin:0}
 <body>
 <main>
   <header><h1>Deluxe Transfer</h1><div id="account"></div></header>
-  <p class="sub">Send any file with a code or a link. Up to 100 MB, kept for as long as you choose (up to 7 days).</p>
+  <p class="sub">Send any file with a code or a link. Up to 100 MB, kept for as long as you choose — even forever.</p>
 
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-send" aria-selected="true">Send</button>
@@ -118,10 +118,11 @@ h2{font-size:16px;margin:0}
       <div class="chips" id="to1"><input id="to1-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Username or name@deluxemail.com"></div>
       <p class="hint" id="to1-hint">Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.</p>
       <textarea id="note" maxlength="2000" placeholder="Message (optional)" hidden></textarea>
-      <div class="signin" id="signin1" hidden><span>Sign in with Deluxe Main to send to people.</span><button class="mini" id="signin1-btn" type="button">Sign in</button></div>
+      <div class="signin" id="signin1" hidden><span>Sign in with Deluxe Main to send to people or keep files forever.</span><button class="mini" id="signin1-btn" type="button">Sign in</button></div>
 
       <label class="field">Keep files for</label>
-      <div class="seg" id="keep"><button type="button" data-h="1" aria-pressed="false">1 hour</button><button type="button" data-h="24" aria-pressed="true">1 day</button><button type="button" data-h="72" aria-pressed="false">3 days</button><button type="button" data-h="168" aria-pressed="false">7 days</button></div>
+      <div class="seg" id="keep"><button type="button" data-h="1" aria-pressed="false">1 hour</button><button type="button" data-h="24" aria-pressed="true">1 day</button><button type="button" data-h="72" aria-pressed="false">3 days</button><button type="button" data-h="168" aria-pressed="false">7 days</button><button type="button" data-h="forever" aria-pressed="false">Forever</button></div>
+      <p class="hint" id="keep-hint" hidden></p>
 
       <button class="btn" id="go" disabled>Send</button>
       <div class="bar" id="bar" hidden><div></div></div>
@@ -309,12 +310,16 @@ function refreshSend(){
   $("go").textContent = !picked.length ? "Send" : n ? `Send ${files} to ${n} ${n > 1 ? "people" : "person"}` : `Send ${files}`;
   $("go").disabled = !picked.length || total > MAX || to1.busy();
   $("note").hidden = !to1.list.length;
-  $("signin1").hidden = !(to1.list.length && !me());
+  const kh = $("keep-hint");
+  if (keep === "forever") { kh.hidden = false; kh.className = me() ? "hint" : "hint bad"; kh.textContent = me() ? "Kept until you delete it (from History or the code screen)." : "Forever needs a Deluxe account. Sign in with Deluxe Main, or pick a time."; }
+  else kh.hidden = true;
+  $("signin1").hidden = !((to1.list.length || keep === "forever") && !me());
   peopleHint(to1, $("to1-hint"), to1.list.length ? "" : "Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.");
   show($("senderr"), total > MAX ? `Too big: the limit is ${MAX_MB} MB.` : "");
 }
 document.querySelectorAll("#keep button").forEach(b => b.onclick = () => {
-  keep = Number(b.dataset.h);
+  keep = b.dataset.h === "forever" ? "forever" : Number(b.dataset.h);
+  refreshSend();
   document.querySelectorAll("#keep button").forEach(x => x.setAttribute("aria-pressed", x === b));
 });
 function choose(list){ picked = [...picked, ...list]; refreshSend(); }
@@ -366,6 +371,7 @@ $("go").onclick = async () => {
   if (to1.busy()) return;
   if (to1.list.length && !me()) { show($("senderr"), "Sign in with Deluxe Main to send to people, or remove them to just get a code."); return; }
   if (to1.bad().length) { show($("senderr"), "Remove the people marked in red first."); return; }
+  if (keep === "forever" && !me()) { show($("senderr"), "Sign in with Deluxe Main to keep files forever, or pick a time."); return; }
   $("go").disabled = true; show($("senderr"), "");
   const total = picked.reduce((s, f) => s + f.size, 0) || 1;
   let done = 0, made = null;
@@ -463,7 +469,7 @@ function showDone(){
   $("outcode").textContent = current.code;
   $("outlink").value = current.link;
   try { $("qr").innerHTML = qrSvg(current.link); } catch { $("qr").hidden = true; }
-  $("outwhen").textContent = "Available until " + until(current.expires);
+  $("outwhen").textContent = current.expires == null ? "Kept until you delete it" : "Available until " + until(current.expires);
   $("pick").hidden = true; $("done").hidden = false;
   $("share").hidden = !navigator.share;
   drawResults(); refreshMore();
@@ -539,9 +545,12 @@ async function find(code){
   $("saveall").hidden = body.files.length < 2;
   $("zipall").hidden = body.files.length < 2;
   $("zipall").disabled = false; $("zipall").textContent = "Download all (.zip)";
-  const mins = Math.max(0, (body.expires - Date.now()) / 60000);
-  const left = mins >= 2880 ? `${Math.floor(mins / 1440)} days left` : mins >= 120 ? `${Math.floor(mins / 60)} hours left` : `${Math.ceil(mins)} minutes left`;
-  $("expires").textContent = `Available until ${until(body.expires)} · ${left}`;
+  if (body.expires == null) $("expires").textContent = "Kept until the sender deletes it";
+  else {
+    const mins = Math.max(0, (body.expires - Date.now()) / 60000);
+    const left = mins >= 2880 ? `${Math.floor(mins / 1440)} days left` : mins >= 120 ? `${Math.floor(mins / 60)} hours left` : `${Math.ceil(mins)} minutes left`;
+    $("expires").textContent = `Available until ${until(body.expires)} · ${left}`;
+  }
   $("found").hidden = false;
   if (location.pathname !== "/d/" + body.code) history.replaceState(null, "", "/d/" + body.code);
   // Keep it in this person's received history.
@@ -638,12 +647,12 @@ async function loadHistory(){
   items.sort((a, b) => (b.at || 0) - (a.at || 0));
   show($("hist-empty"), items.length ? "" : histView === "sent" ? "Nothing sent yet." : "Nothing received yet.");
   $("hist-list").replaceChildren(...items.map(t => {
-    const live = t.expires > Date.now();
+    const live = t.expires == null || t.expires > Date.now();
     const box = el("div", "item");
     const top = el("div", "top");
     const files = t.files || [];
     top.append(el("b", "", files.length ? files[0].name + (files.length > 1 ? ` +${files.length - 1} more` : "") : t.code),
-      el("span", "pill" + (live ? "" : " old"), live ? "Active" : "Expired"));
+      el("span", "pill" + (live ? "" : " old"), t.expires == null ? "Forever" : live ? "Active" : "Expired"));
     const total = files.reduce((s, f) => s + (f.size || 0), 0);
     const who = histView === "sent" ? (t.to && t.to.length ? "To " + t.to.join(", ") : "Shared by code") : (t.from ? "From " + t.from.name : "Opened with code");
     box.append(top, el("div", "meta", `${when(t.at)} · ${size(total)} · Code ${t.code}`), el("div", "meta", who));
@@ -675,7 +684,7 @@ if (D) {
 refreshSend();
 try {
   const saved = JSON.parse(sessionStorage.getItem(SAVED) || "null");
-  if (saved && saved.code && saved.expires > Date.now() && location.pathname === "/") { current = saved; current.to ||= []; showDone(); }
+  if (saved && saved.code && (saved.expires == null || saved.expires > Date.now()) && location.pathname === "/") { current = saved; current.to ||= []; showDone(); }
 } catch {}
 const m = location.pathname.match(/^\/d\/([A-Za-z0-9]{6})\/?$/);
 if (m) { tab("get"); $("codein").value = m[1].toUpperCase(); find(m[1].toUpperCase()); }

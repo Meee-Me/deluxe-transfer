@@ -5,7 +5,8 @@ whoever has either can download them for 24 hours.
 
 - Several files at once (up to 100 MB in total), with an upload progress bar
 - 6-character code (no look-alike characters such as 0/O or 1/I) plus a share link
-- The sender picks how long files stay: 1 hour, 1 day, 3 days or 7 days
+- The sender picks how long files stay: 1 hour, 1 day, 3 days, 7 days, or **Forever** (kept until
+  they delete it; needs a Deluxe sign-in so guests can't fill the storage; `FOREVER=off` turns it off)
 - A QR code of the link, to open it on a phone nearby
 - Receivers see photo thumbnails, can open photos, videos and PDFs, open documents in Deluxe
   Docs, and download everything as one zip

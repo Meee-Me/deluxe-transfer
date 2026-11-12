@@ -13,6 +13,10 @@ export const EXPIRE_HOURS = Number(process.env.EXPIRE_HOURS || 24);
 // How long a sender may keep files (hours): the default, or one of these.
 export const KEEP_CHOICES = [1, 24, 72, 168].filter((h) => h <= Number(process.env.MAX_EXPIRE_HOURS || 168));
 export const keepHours = (asked) => (KEEP_CHOICES.includes(Number(asked)) ? Number(asked) : EXPIRE_HOURS);
+// "Forever" (hours: "forever"): kept until the sender deletes it; expires is null.
+// Only for people signed in with Deluxe Main. FOREVER=off turns it off.
+export const foreverAllowed = () => String(process.env.FOREVER || "on").trim().toLowerCase() !== "off";
+export const isLive = (meta) => meta.expires == null || meta.expires > Date.now();
 export const MAX_FILES = 50;
 const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I
 const CODE_LEN = 6;
@@ -167,7 +171,7 @@ export async function loadMeta(code) {
   const h = await metaHead(code);
   if (!h) return null;
   const meta = await store.fetchJson(h.url);
-  return meta.expires > Date.now() ? meta : null;
+  return isLive(meta) ? meta : null;
 }
 
 export async function deleteTransfer(code) {

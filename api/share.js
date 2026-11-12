@@ -23,7 +23,7 @@ export const POST = guarded(async function POST(request) {
   if (list.length > MAX_PEOPLE) return json({ error: `Up to ${MAX_PEOPLE} people at a time.` }, 400);
 
   const link = new URL("/d/" + code, request.url).href;
-  const until = new Date(meta.expires).toUTCString().replace(" GMT", " UTC");
+  const until = meta.expires == null ? null : new Date(meta.expires).toUTCString().replace(" GMT", " UTC");
   const note = String(b.note || "").trim().slice(0, 2000);
   const n = meta.files.length;
   const what = n === 1 ? meta.files[0].name : n + " files";
@@ -32,7 +32,7 @@ export const POST = guarded(async function POST(request) {
   const body =
     (note ? note + "\n\n" : "") +
     `${me.name} sent you ${n === 1 ? "a file" : n + " files"} with Deluxe Transfer:\n\n${files}\n\n` +
-    `Download: ${link}\nCode: ${code}\n\nAvailable until ${until}.`;
+    `Download: ${link}\nCode: ${code}\n\n` + (until ? `Available until ${until}.` : "Kept until the sender deletes it.");
 
   const results = [];
   const done = new Set();
