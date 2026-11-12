@@ -328,9 +328,9 @@ $("signin1-btn").onclick = () => {
   signIn();
 };
 
-// Which storage the server uses ("blob" or "supabase"), asked once.
+// Which storage the server uses ({ backend: "blob" | "supabase", access }), asked once.
 let backendP = null;
-const getBackend = () => (backendP ||= fetch("/api/health").then(r => r.json()).then(h => h.backend || "blob").catch(() => "blob"));
+const getBackend = () => (backendP ||= fetch("/api/health").then(r => r.json()).catch(() => ({})).then(h => ({ backend: h.backend || "blob", access: h.access === "private" ? "private" : "public" })));
 // Supabase only takes plain characters in names; the real name is packed in and unpacked on the server.
 const b64name = n => "_b64_" + btoa(String.fromCharCode(...new TextEncoder().encode(n))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 // Upload one file through a one-time Supabase link, with progress and cancel.
@@ -383,9 +383,9 @@ $("go").onclick = async () => {
       while (used.has(name.toLowerCase())) name = `${base} (${n++})${ext}`;
       used.add(name.toLowerCase());
       const onProgress = loaded => { const p = Math.min(99, Math.round((done + loaded) / total * 100)); progress(p, `Uploading… ${p}%`); };
-      if (where === "supabase") await uploadSupabase(`t/${code}/${randomDir()}/${b64name(name)}`, f, { code, owner, signal: stop.signal, onProgress });
+      if (where.backend === "supabase") await uploadSupabase(`t/${code}/${randomDir()}/${b64name(name)}`, f, { code, owner, signal: stop.signal, onProgress });
       else await upload(`t/${code}/${randomDir()}/${name}`, f, {
-        access: "public",
+        access: where.access,
         handleUploadUrl: "/api/upload",
         clientPayload: JSON.stringify({ code, owner }),
         multipart: f.size > 20 * 1048576,

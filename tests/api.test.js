@@ -1,6 +1,7 @@
 import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
+process.env.BLOB_ACCESS = "public";
 process.env.BLOB_READ_WRITE_TOKEN = "vercel_blob_rw_teststore_secretsecretsecret";
 process.env.MAX_MB = "1";
 const lib = await import("../api/_lib.js");
@@ -113,4 +114,30 @@ test("expired and abandoned transfers are cleaned up", async () => {
   delete process.env.CRON_SECRET;
   assert.equal(r.deleted, 3);
   assert.deepEqual([...blobs.keys()].sort(), [`t/BBBBBB/${DIR}/b`, "t/BBBBBB/meta.json", `t/DDDDDD/${DIR}/d`]);
+});
+
+test("a private store: files are served through the site, safely", async () => {
+  const { GET: file } = await import("../api/file.js");
+  const { code, owner } = await (await create(req("POST", "/api/create"))).json();
+  blobs.set(`t/${code}/${DIR}/photo.png`, mk(`t/${code}/${DIR}/photo.png`, 3));
+  blobs.set(`t/${code}/${DIR}x/page.html`, mk(`t/${code}/${DIR}x/page.html`, 5, "", new Date(Date.now() + 1000)));
+  const types = { "photo.png": "image/png", "page.html": "text/html" };
+  const saved = { privateFiles: lib.store.privateFiles, open: lib.store.open };
+  lib.store.privateFiles = async () => true;
+  lib.store.open = async (url) => ({ stream: new Blob(["data"]).stream(), contentType: types[url.split("/").pop()], size: 4 });
+  try {
+    await finish(req("POST", "/api/finish", { code, owner }));
+    const got = await (await get(req("GET", "/api/transfer?code=" + code))).json();
+    assert.equal(got.files[0].url, `https://transfer.example/api/file?code=${code}&n=0&download=1`);
+    const view = await file(req("GET", `/api/file?code=${code}&n=0`));
+    assert.equal(view.headers.get("content-type"), "image/png");
+    assert.match(view.headers.get("content-disposition"), /^inline; .*photo\.png/);
+    assert.equal(await view.text(), "data");
+    const page = await file(req("GET", `/api/file?code=${code}&n=1`));
+    assert.match(page.headers.get("content-disposition"), /^attachment/, "web pages are never shown on the site");
+    assert.equal(page.headers.get("content-type"), "application/octet-stream");
+    assert.match(page.headers.get("content-security-policy"), /sandbox/);
+    assert.equal((await file(req("GET", `/api/file?code=${code}&n=7`))).status, 404);
+    assert.equal((await file(req("GET", `/api/file?code=ZZZZZZ&n=0`))).status, 404);
+  } finally { Object.assign(lib.store, saved); }
 });

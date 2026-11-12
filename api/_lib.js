@@ -25,12 +25,48 @@ export function backend() {
   if (supabaseReady()) return "supabase";
   return null;
 }
+// A Vercel Blob store is either public or private (chosen when it was made).
+// BLOB_ACCESS can say which; otherwise it is worked out once from the store.
+let accessP = null;
+export function blobAccess() {
+  const set = String(process.env.BLOB_ACCESS || "").trim().toLowerCase();
+  if (set === "public" || set === "private") return Promise.resolve(set);
+  accessP ||= (async () => {
+    const { blobs } = await blob.list({ limit: 1 });
+    if (blobs[0]) return /\.private\.blob\./.test(blobs[0].url) ? "private" : "public";
+    // An empty store: try a tiny public file.
+    try {
+      const probe = await blob.put("t/.access-check", "x", { access: "public", addRandomSuffix: true });
+      await blob.del(probe.url).catch(() => {});
+      return "public";
+    } catch (e) {
+      if (/private/i.test(String(e && e.message))) return "private";
+      throw e;
+    }
+  })().catch((e) => { accessP = null; throw e; });
+  return accessP;
+}
+async function readText(stream) {
+  return await new Response(stream).text();
+}
 const blobStore = {
   head: (p) => blob.head(p),
   list: (o) => blob.list(o),
-  put: (p, body, o) => blob.put(p, body, o),
+  put: async (p, body, o) => blob.put(p, body, { ...o, access: await blobAccess() }),
   del: (urls) => blob.del(urls),
-  fetchJson: async (url) => (await fetch(url, { cache: "no-store" })).json(),
+  fetchJson: async (url) => {
+    if ((await blobAccess()) === "private") {
+      const got = await blob.get(url, { access: "private", useCache: false });
+      if (!got || !got.stream) throw Object.assign(new Error("not found"), { name: "BlobNotFoundError" });
+      return JSON.parse(await readText(got.stream));
+    }
+    return (await fetch(url, { cache: "no-store" })).json();
+  },
+  // The contents of a private file, as { stream, contentType, size } (or null).
+  open: async (url) => {
+    const got = await blob.get(url, { access: "private" });
+    return got && got.stream ? { stream: got.stream, contentType: got.blob.contentType, size: got.blob.size } : null;
+  },
 };
 const active = () => {
   const b = backend();
@@ -46,6 +82,9 @@ export const store = {
   del: (urls) => active().del(urls),
   fetchJson: (url) => active().fetchJson(url),
   signUpload: (p) => supabaseStore.signUpload(p),
+  open: (url) => blobStore.open(url),
+  // Whether downloads must go through /api/file (a private Blob store).
+  privateFiles: async () => backend() === "blob" && (await blobAccess()) === "private",
 };
 
 export const json = (body, status = 200) =>
@@ -137,8 +176,14 @@ export async function deleteTransfer(code) {
   return blobs.length;
 }
 
-export const publicMeta = (m) => ({
+// What anyone with the code may see. Files in a private store are served
+// through /api/file on this site (origin), others straight from storage.
+export const publicMeta = (m, origin = "", viaSite = false) => ({
   code: m.code,
   expires: m.expires,
-  files: m.files.map((f) => ({ name: f.name, size: f.size, url: f.downloadUrl })),
+  files: m.files.map((f, i) => ({
+    name: f.name,
+    size: f.size,
+    url: viaSite ? `${origin}/api/file?code=${m.code}&n=${i}&download=1` : f.downloadUrl,
+  })),
 });

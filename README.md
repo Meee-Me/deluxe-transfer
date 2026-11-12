@@ -25,6 +25,11 @@ Storage** when Supabase is connected (`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_
 `SUPABASE_SECRET_KEY`; the public `deluxe-transfer` bucket is made on first use, or set
 `SUPABASE_BUCKET`). `/api/health` says which one is in use.
 
+A Blob store can be **public or private**; Transfer works out which (or set `BLOB_ACCESS`). With a
+private store, files are served through `/api/file?code=…&n=…` to anyone with the code. Only
+photos, videos, audio and PDFs open in the browser there; anything else (web pages, SVGs…) is always
+downloaded, in a sandbox, so a file can never run on Transfer's own address.
+
 ## Put it on Vercel
 
 1. **Add New → Project**, import this repository. Leave the build settings as they are

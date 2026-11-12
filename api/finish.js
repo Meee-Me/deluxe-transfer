@@ -31,5 +31,5 @@ export const POST = guarded(async function POST(request) {
     access: "public", addRandomSuffix: false, allowOverwrite: false, contentType: "application/json",
   });
   const link = new URL("/d/" + code, request.url).href;
-  return json({ ...publicMeta(meta), link });
+  return json({ ...publicMeta(meta, new URL(request.url).origin, await store.privateFiles()), link });
 });

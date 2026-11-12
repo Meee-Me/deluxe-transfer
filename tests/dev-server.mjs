@@ -11,22 +11,27 @@ if (SUPA) {
   process.env.SUPABASE_URL = fake.url;
   process.env.SUPABASE_SECRET_KEY = "sb_secret_local";
   console.log("pretend Supabase at " + fake.url);
-} else process.env.BLOB_READ_WRITE_TOKEN ||= "vercel_blob_rw_local_secretsecretsecret";
+} else {
+  process.env.BLOB_READ_WRITE_TOKEN ||= "vercel_blob_rw_local_secretsecretsecret";
+  process.env.BLOB_ACCESS ||= "public";
+}
 const lib = await import("../api/_lib.js");
 const blobs = new Map();
 const PORT = Number(process.env.PORT || 3000);
 const BASE = `http://localhost:${PORT}/_blob/`;
 const nf = () => Object.assign(new Error("not found"), { name: "BlobNotFoundError" });
-const rec = (p, body) => ({ pathname: p, size: body.length, body, uploadedAt: new Date(), url: BASE + p, downloadUrl: BASE + p + "?download=1" });
+const rec = (p, body, type) => ({ type, pathname: p, size: body.length, body, uploadedAt: new Date(), url: BASE + p, downloadUrl: BASE + p + "?download=1" });
 if (!SUPA) Object.assign(lib.store, {
   head: async (p) => { if (!blobs.has(p)) throw nf(); return blobs.get(p); },
   list: async ({ prefix }) => ({ blobs: [...blobs.values()].filter((b) => b.pathname.startsWith(prefix)), hasMore: false }),
   put: async (p, body) => { blobs.set(p, rec(p, Buffer.from(body))); },
   del: async (urls) => { for (const [k, b] of blobs) if (urls.includes(b.url)) blobs.delete(k); },
   fetchJson: async (url) => JSON.parse(blobs.get(url.slice(BASE.length)).body),
+  // BLOB_ACCESS=private: files are read here and served by /api/file
+  open: async (url) => { const b = blobs.get(url.slice(BASE.length)); return b ? { stream: new Blob([b.body]).stream(), contentType: b.type || "application/octet-stream", size: b.body.length } : null; },
 });
 const routes = {};
-for (const n of ["create", "upload", "finish", "transfer", "cleanup", "share", "lookup", "health"]) routes[n] = await import(`../api/${n}.js`);
+for (const n of ["create", "upload", "finish", "transfer", "cleanup", "share", "lookup", "health", "file"]) routes[n] = await import(`../api/${n}.js`);
 
 // FAKE_MAIN=1: a pretend Deluxe Main where any Bearer key is "Test Person" and mail is printed.
 if (process.env.FAKE_MAIN === "1") {
@@ -46,7 +51,7 @@ http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const chunks = []; for await (const c of req) chunks.push(c);
   const body = Buffer.concat(chunks);
-  if (url.pathname === "/_blob_put" || (url.pathname.startsWith("/_blob_api") && req.method === "PUT")) { const r = rec(url.searchParams.get("pathname"), body); blobs.set(r.pathname, r); res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ url: r.url, downloadUrl: r.downloadUrl, pathname: r.pathname, contentType: "application/octet-stream", contentDisposition: "attachment" })); }
+  if (url.pathname === "/_blob_put" || (url.pathname.startsWith("/_blob_api") && req.method === "PUT")) { const r = rec(url.searchParams.get("pathname"), body, req.headers["x-content-type"] || req.headers["content-type"]); blobs.set(r.pathname, r); res.setHeader("content-type", "application/json"); return res.end(JSON.stringify({ url: r.url, downloadUrl: r.downloadUrl, pathname: r.pathname, contentType: "application/octet-stream", contentDisposition: "attachment" })); }
   if (url.pathname.startsWith("/_blob/")) { const b = blobs.get(decodeURIComponent(url.pathname.slice(7))); res.statusCode = b ? 200 : 404; return res.end(b ? b.body : "gone"); }
   const api = /^\/api\/(\w+)$/.exec(url.pathname);
   if (api && routes[api[1]]?.[req.method]) {
