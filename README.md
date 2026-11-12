@@ -13,12 +13,13 @@ whoever has either can download them for 24 hours.
 - Uploads can be cancelled; only the sender can **Delete now**; everything else is removed after it expires
 - **Send to people** (signed in with Deluxe Main): type as many people as you like in **Send to**,
   as `name`, `@name`, `name@deluxemail.com`, `Name <name@deluxemail.com>` or their full name. Each
-  shows as a chip, checked with Deluxe Main. The link and code arrive in their Deluxe Mail inbox,
-  from you, with a copy in your Sent. Sending files with just a code needs no account.
-- **History**: what you sent and received, kept in your Deluxe account (Deluxe Main).
+  shows as a chip, checked with Deluxe Main. The files arrive in their **Deluxe Transfer Inbox**
+  (with a count of new ones on the Inbox tab), from you, with your message. Nothing is sent by
+  mail. Sending files with just a code needs no account.
+- **Inbox** (sent to you, plus codes you opened) and **Sent**, kept in your Deluxe account (Deluxe Main).
 - **Save to Deluxe Drive**: received files can be saved into your own Deluxe Drive, in a
   "Deluxe Transfer" folder.
-- `/api/health` shows whether storage and Deluxe Mail sending are set up (yes/no only).
+- `/api/health` shows whether storage and sending to people are set up (yes/no only).
 
 Runs on **Vercel**. Files go from the browser straight into storage, so Vercel's 4.5 MB function
 limit does not apply. Storage is **Vercel Blob** when it is connected, otherwise **Supabase
@@ -39,7 +40,7 @@ downloaded, in a sandbox, so a file can never run on Transfer's own address.
    the project. That adds `BLOB_READ_WRITE_TOKEN` for you.
 3. **Deployments → Redeploy** so the new token is picked up.
 
-4. For **Send by Deluxe Mail**, add the environment variable `MAIN_APP_KEY` (mark it
+4. For **sending to people**, add the environment variable `MAIN_APP_KEY` (mark it
    **Sensitive**, Production) with Deluxe Transfer's key, then redeploy. Deluxe Main only has the
    key's SHA-256 fingerprint (`keyHash` of `transfer` in Deluxe Main's `worker/apps.js`); a new key
    means putting its new fingerprint there.
@@ -52,7 +53,7 @@ Optional environment variables:
 | `EXPIRE_HOURS` | `24` | How long files stay unless the sender picks otherwise |
 | `MAX_EXPIRE_HOURS` | `168` | Longest the sender may pick (1, 24, 72 or 168 hours) |
 | `MAIN_URL` | `https://deluxe-drive.deluxelordd.workers.dev/main` | The Deluxe data server |
-| `MAIL_DOMAIN` | `deluxemail.com` | Must match Deluxe Mail's `MAIL_DOMAIN` |
+| `MAIL_DOMAIN` | `deluxemail.com` | The domain in Deluxe addresses people may type (`name@deluxemail.com`) |
 | `CRON_SECRET` | — | Set any random text so only Vercel Cron can run the cleanup |
 
 A daily Vercel Cron job (`/api/cleanup`) deletes expired transfers and unfinished uploads.
@@ -65,11 +66,12 @@ browser ── POST /api/create ─────────► code + sender key
         ── upload each file ─────────► Vercel Blob   (allowed by /api/upload)
         ── POST /api/finish ─────────► saves t/CODE/meta.json, returns the link
 receiver ─ GET /api/transfer?code= ──► file list with download links
-sender ─── POST /api/share ──────────► Deluxe Main: a new message in the person's Deluxe Mail inbox
+sender ─── POST /api/share ──────────► Deluxe Main: an unread entry in the person's Transfer inbox
 ```
 
-Deluxe Transfer may only **add** new Deluxe Mail messages (Inbox and Sent) and new Deluxe Drive
-files. Deluxe Main and Deluxe Drive refuse it reading, changing or deleting anyone's mail or files.
+Each person's inbox is Deluxe Transfer's own data for them in Deluxe Main (`received/CODE`). For
+"Save to Deluxe Drive" it may only **add** new Drive files; Deluxe Main and Deluxe Drive refuse it
+reading, changing or deleting anyone's files.
 
 Files are stored at `t/CODE/<random 24 characters>/<file name>`, so their addresses can't be guessed.
 

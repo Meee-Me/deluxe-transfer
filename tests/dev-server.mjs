@@ -61,6 +61,6 @@ http.createServer(async (req, res) => {
   const file = url.pathname === "/" || /^\/d\/[^/]+$/.test(url.pathname) ? "index.html" : url.pathname.slice(1);
   try {
     const data = await readFile(new URL("../public/" + file, import.meta.url));
-    res.setHeader("content-type", file.endsWith(".js") ? "text/javascript" : "text/html"); res.end(data);
+    res.setHeader("content-type", { js: "text/javascript", svg: "image/svg+xml", png: "image/png" }[file.split(".").pop()] || "text/html"); res.end(data);
   } catch { res.statusCode = 404; res.end("not found"); }
 }).listen(PORT, () => console.log("http://localhost:" + PORT));
