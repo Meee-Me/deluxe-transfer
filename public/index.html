@@ -7,26 +7,48 @@
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
-:root{--bg:#f6f7fb;--card:#fff;--ink:#14161f;--muted:#646b7d;--line:#e2e5ee;--accent:#4f46e5;--accent-ink:#fff;--soft:#eef0ff;--bad:#c62828}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1117;--card:#181b24;--ink:#eceef5;--muted:#9aa1b2;--line:#2a2f3d;--accent:#8b85ff;--accent-ink:#0f1117;--soft:#232647;--bad:#ff6b6b}}
+:root{--bg:#f6f7fb;--card:#fff;--ink:#14161f;--muted:#646b7d;--line:#e2e5ee;--accent:#4f46e5;--accent-ink:#fff;--soft:#eef0ff;--bad:#c62828;--good:#2e7d32;--good-soft:#e8f5e9;--bad-soft:#fdecea}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1117;--card:#181b24;--ink:#eceef5;--muted:#9aa1b2;--line:#2a2f3d;--accent:#8b85ff;--accent-ink:#0f1117;--soft:#232647;--bad:#ff6b6b;--good:#81c784;--good-soft:#1c2b1f;--bad-soft:#3a1d1d}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-main{max-width:520px;margin:0 auto;padding:32px 16px 48px}
-h1{font-size:28px;margin:0 0 4px;letter-spacing:-.02em}
-.sub{color:var(--muted);margin:0 0 24px}
+main{max-width:520px;margin:0 auto;padding:24px 16px 48px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-size:26px;margin:0;letter-spacing:-.02em;white-space:nowrap}
+#account{flex:none}
+.sub{color:var(--muted);margin:6px 0 20px}
 .tabs{display:flex;gap:4px;background:var(--line);padding:4px;border-radius:12px;margin-bottom:16px}
-.tabs button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px;border-radius:9px;cursor:pointer}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);font:inherit;font-weight:600;padding:10px 4px;border-radius:9px;cursor:pointer}
 .tabs button[aria-selected=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 2px #0002}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
-.drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:32px 16px;text-align:center;cursor:pointer;color:var(--muted)}
+.drop{display:block;border:2px dashed var(--line);border-radius:12px;padding:28px 16px;text-align:center;cursor:pointer;color:var(--muted)}
 .drop.over{border-color:var(--accent);background:var(--soft)}
-.drop strong{color:var(--ink);display:block;font-size:18px;margin-bottom:4px}
+.drop strong{color:var(--ink);display:block;font-size:18px;margin-bottom:2px}
 input[type=file]{display:none}
-ul{list-style:none;padding:0;margin:16px 0 0}
-li{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
-li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-li span:last-child{color:var(--muted);flex:none}
-li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul{list-style:none;padding:0;margin:12px 0 0}
+li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.fname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsize{color:var(--muted);flex:none;font-size:14px}
+li a.fname{color:var(--accent);font-weight:600;text-decoration:none}
+.x{border:0;background:none;color:var(--muted);font-size:20px;line-height:1;padding:4px 6px;cursor:pointer;flex:none}
+.mini{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;flex:none;white-space:nowrap}
+a.mini{text-decoration:none;display:inline-block}
+.mini:disabled{opacity:.6;cursor:default}
+.mini.done{color:var(--good);border-color:transparent;background:var(--good-soft)}
+label.field{display:block;font-weight:700;font-size:15px;margin:18px 0 6px}
+label.field small{font-weight:400;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:6px;min-height:50px;cursor:text}
+.chips:focus-within{border-color:var(--accent)}
+.chips input{flex:1;min-width:140px;border:0;background:none;color:var(--ink);font:inherit;padding:6px;outline:none}
+.chip{display:inline-flex;align-items:center;gap:6px;max-width:100%;border-radius:999px;padding:4px 6px 4px 12px;font-size:14px;background:var(--soft);color:var(--ink)}
+.chip.ok{background:var(--good-soft)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip small{color:var(--muted)}
+.chip button{border:0;background:none;color:inherit;font-size:16px;line-height:1;cursor:pointer;padding:2px 4px}
+.hint{color:var(--muted);font-size:13px;margin:6px 2px 0}
+.hint.bad{color:var(--bad)}
+textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:12px;font:inherit;min-height:64px;resize:vertical;margin-top:8px}
+.signin{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--soft);border-radius:12px;padding:12px 14px;margin-top:18px;font-size:14px}
 .btn{display:block;width:100%;margin-top:16px;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:700;background:var(--accent);color:var(--accent-ink);cursor:pointer;text-align:center;text-decoration:none}
 .btn:disabled{opacity:.5;cursor:default}
 .btn.ghost{background:var(--soft);color:var(--ink)}
@@ -40,121 +62,254 @@ li a{color:var(--accent);font-weight:600;text-decoration:none;overflow:hidden;te
 .link button{border:0;border-radius:10px;padding:0 16px;font:inherit;font-weight:600;background:var(--soft);color:var(--ink);cursor:pointer}
 .muted{color:var(--muted);font-size:14px;text-align:center}
 .err{color:var(--bad);margin-top:12px;text-align:center}
-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-#account{flex:none;margin-top:2px}
-.mail{margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
-.mail h2{font-size:16px;margin:0 0 8px}
-.mail input,.mail textarea{width:100%;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:10px;padding:12px;font:inherit;margin-bottom:8px}
-.mail textarea{min-height:64px;resize:vertical}
-.ok{color:#2e7d32;margin-top:8px;text-align:center}
-@media (prefers-color-scheme:dark){.ok{color:#81c784}}
+.ok{color:var(--good);margin-top:8px;text-align:center}
+.results{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.results li{border:0;padding:4px 0;font-size:14px;justify-content:flex-start}
+.results .yes{color:var(--good)}.results .no{color:var(--bad)}
+hr{border:0;border-top:1px solid var(--line);margin:20px 0 0}
+h2{font-size:16px;margin:0}
+.seg{display:flex;gap:6px;margin-bottom:12px}
+.seg button{border:1px solid var(--line);background:none;color:var(--muted);border-radius:999px;padding:6px 14px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.item{display:block;border-top:1px solid var(--line);padding:12px 0}
+.item:first-child{border-top:0}
+.item .top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.item b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pill{flex:none;font-size:12px;font-weight:700;border-radius:999px;padding:2px 8px;background:var(--good-soft);color:var(--good)}
+.pill.old{background:var(--line);color:var(--muted)}
+.item .meta{color:var(--muted);font-size:13px;margin-top:2px}
+.item .acts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.drivebar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;font-size:14px;color:var(--muted)}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
   <header><h1>Deluxe Transfer</h1><div id="account"></div></header>
-  <p class="sub">Send files with a code. Up to 100 MB, gone after 24 hours.</p>
+  <p class="sub">Send any file with a code. Up to 100 MB, gone after 24 hours.</p>
 
   <div class="tabs" role="tablist">
     <button role="tab" id="tab-send" aria-selected="true">Send</button>
     <button role="tab" id="tab-get" aria-selected="false">Receive</button>
+    <button role="tab" id="tab-hist" aria-selected="false">History</button>
   </div>
 
+  <!-- SEND -->
   <section id="send" class="card">
     <div id="pick">
       <label class="drop" id="drop">
-        <strong>Choose files</strong>or drop them here
+        <strong>Choose files</strong>or drop them here · any file type
         <input type="file" id="file" multiple>
       </label>
       <ul id="chosen"></ul>
+
+      <label class="field" for="to1-input">Send to <small>(optional)</small></label>
+      <div class="chips" id="to1"><input id="to1-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Username or name@deluxemail.com"></div>
+      <p class="hint" id="to1-hint">Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.</p>
+      <textarea id="note" maxlength="2000" placeholder="Message (optional)" hidden></textarea>
+      <div class="signin" id="signin1" hidden><span>Sign in with Deluxe Main to send to people.</span><button class="mini" id="signin1-btn" type="button">Sign in</button></div>
+
       <button class="btn" id="go" disabled>Send</button>
       <div class="bar" id="bar" hidden><div></div></div>
       <p class="muted" id="pct" hidden></p>
+      <p class="err" id="senderr" hidden></p>
     </div>
+
     <div id="done" hidden>
       <p class="muted">Share this code</p>
       <div class="code" id="outcode"></div>
       <p class="muted">or this link</p>
       <div class="link"><input id="outlink" readonly><button id="copy">Copy</button></div>
-      <button class="btn" id="share" hidden>Share…</button>
-      <form class="mail" id="mailform">
-        <h2>Send by Deluxe Mail</h2>
-        <input id="mailto" type="text" inputmode="email" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="name@deluxemail.com">
-        <textarea id="note" maxlength="2000" placeholder="Message (optional)"></textarea>
-        <button class="btn" id="mailbtn">Send by Deluxe Mail</button>
-        <p class="ok" id="mailok" hidden></p>
-        <p class="err" id="mailerr" hidden></p>
-      </form>
+      <button class="btn ghost" id="share" hidden>Share…</button>
+      <div class="results" id="results" hidden><h2>Sent by Deluxe Mail</h2><ul id="resultlist"></ul></div>
+
+      <label class="field" for="to2-input">Send to more people</label>
+      <div class="chips" id="to2"><input id="to2-input" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="done" placeholder="Username or name@deluxemail.com"></div>
+      <p class="hint" id="to2-hint"></p>
+      <textarea id="note2" maxlength="2000" placeholder="Message (optional)" hidden></textarea>
+      <button class="btn" id="mailbtn" disabled>Send by Deluxe Mail</button>
+      <p class="err" id="mailerr" hidden></p>
+
+      <hr>
       <button class="btn ghost" id="again">Send more files</button>
       <button class="btn danger" id="del">Delete now</button>
+      <p class="err" id="doneerr" hidden></p>
     </div>
-    <p class="err" id="senderr" hidden></p>
   </section>
 
+  <!-- RECEIVE -->
   <section id="get" class="card" hidden>
     <form id="lookup">
-      <input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" value="">
+      <input class="codein" id="codein" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123">
       <button class="btn">Find files</button>
     </form>
     <div id="found" hidden>
       <ul id="files"></ul>
+      <button class="btn ghost" id="saveall" hidden>Save all to Deluxe Drive</button>
+      <div class="drivebar" id="drivebar" hidden><span id="drivemsg"></span><a class="mini" href="https://deluxe-drive-xi.vercel.app" target="_blank" rel="noopener">Open Drive</a></div>
       <p class="muted" id="expires"></p>
     </div>
     <p class="err" id="geterr" hidden></p>
+  </section>
+
+  <!-- HISTORY -->
+  <section id="hist" class="card" hidden>
+    <div id="hist-out" hidden>
+      <p class="muted">Sign in with Deluxe Main to keep a history of what you send and receive.</p>
+      <button class="btn" id="hist-signin">Sign in with Deluxe Main</button>
+    </div>
+    <div id="hist-in" hidden>
+      <div class="seg"><button id="seg-sent" aria-pressed="true">Sent</button><button id="seg-recv" aria-pressed="false">Received</button></div>
+      <div id="hist-list"></div>
+      <p class="muted" id="hist-empty" hidden></p>
+    </div>
   </section>
 </main>
 <script src="https://deluxe-main.vercel.app/deluxe.js" data-app="transfer"></script>
 <script type="module">
 import { upload } from "/blob-upload.js";
+
+const DRIVE_SERVER = "https://deluxe-drive.deluxelordd.workers.dev";
+const DRIVE_FOLDER = "f_deluxe_transfer";
+const MAX_MB = 100, MAX = MAX_MB * 1048576;
+const SAVED = "transfer.current";
 const $ = id => document.getElementById(id);
 const size = b => b < 1024 ? b + " B" : b < 1048576 ? (b/1024).toFixed(1) + " KB" : b < 1073741824 ? (b/1048576).toFixed(1) + " MB" : (b/1073741824).toFixed(2) + " GB";
-const MAX_MB = 100, MAX = MAX_MB * 1048576;
-let picked = [], current = null;
+const D = window.Deluxe;
+const me = () => (D && D.user()) || null;
+let picked = [], current = null, histView = "sent";
 
+function show(el, text){ el.textContent = text || ""; el.hidden = !text; }
+function el(tag, cls, text){ const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function signIn(){ if (D) D.signIn(); else alert("Deluxe Main could not be reached. Try again in a moment."); }
+
+/* ---------------- tabs ---------------- */
 function tab(name){
-  $("tab-send").setAttribute("aria-selected", name === "send");
-  $("tab-get").setAttribute("aria-selected", name === "get");
-  $("send").hidden = name !== "send";
-  $("get").hidden = name !== "get";
+  for (const t of ["send", "get", "hist"]) {
+    $("tab-" + t).setAttribute("aria-selected", t === name);
+    $(t).hidden = t !== name;
+  }
+  if (name === "hist") loadHistory();
 }
 $("tab-send").onclick = () => tab("send");
 $("tab-get").onclick = () => { tab("get"); $("codein").focus(); };
+$("tab-hist").onclick = () => tab("hist");
 
-function show(el, text){ el.textContent = text; el.hidden = !text; }
-function li(left, right){
-  const l = document.createElement("li"), a = document.createElement("span"), b = document.createElement("span");
-  if (left instanceof Node) a.append(left); else a.textContent = left;
-  b.textContent = right; l.append(a, b); return l;
+/* ---------------- calls ---------------- */
+async function api(path, opts = {}){
+  const headers = { "content-type": "application/json", ...(opts.headers || {}) };
+  if (me()) headers.authorization = "Bearer " + D.token();
+  const r = await fetch(path, { method: "POST", ...opts, headers });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(body.error || `Something went wrong (error ${r.status}). Try again.`), { status: r.status, body });
+  return body;
 }
 
-function choose(list){
-  picked = [...picked, ...list];
+/* ---------------- people ("Send to") ---------------- */
+// A box where people are typed in, shown as stacked chips. Each is checked with Deluxe Main.
+function people(boxId, onChange){
+  const box = $(boxId), input = $(boxId + "-input"), list = [];
+  box.addEventListener("click", e => { if (e.target === box) input.focus(); });
+  function draw(){
+    box.querySelectorAll(".chip").forEach(c => c.remove());
+    for (const p of list) {
+      const c = el("span", "chip" + (p.state === "ok" ? " ok" : p.state === "bad" ? " bad" : ""));
+      const label = el("span", "", p.state === "ok" ? p.name : p.input);
+      c.append(label);
+      if (p.state === "ok") c.append(el("small", "", "@" + p.handle));
+      if (p.state === "checking") c.append(el("small", "", "…"));
+      c.title = p.state === "bad" ? p.error : p.address || p.input;
+      const x = el("button", "", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + p.input);
+      x.onclick = () => { list.splice(list.indexOf(p), 1); draw(); };
+      c.append(x);
+      box.insertBefore(c, input);
+    }
+    onChange();
+  }
+  async function add(text){
+    for (const raw of String(text).split(/[,;\n]+/)) {
+      const input = raw.trim();
+      if (!input || list.some(p => p.input.toLowerCase() === input.toLowerCase())) continue;
+      const p = { input, state: "checking" };
+      list.push(p);
+      draw();
+      if (!me()) { p.state = "wait"; draw(); continue; }
+      try {
+        const who = await api("/api/lookup", { body: JSON.stringify({ to: input }) });
+        if (list.some(q => q !== p && q.handle === who.handle)) { list.splice(list.indexOf(p), 1); draw(); continue; }
+        Object.assign(p, who, { state: "ok" });
+      } catch (e) { Object.assign(p, { state: "bad", error: e.message }); }
+      draw();
+    }
+  }
+  input.addEventListener("keydown", e => {
+    if ((e.key === "Enter" || e.key === "," || e.key === ";") && input.value.trim()) { e.preventDefault(); add(input.value); input.value = ""; }
+    else if (e.key === "Backspace" && !input.value && list.length) { list.pop(); draw(); }
+  });
+  input.addEventListener("blur", () => { if (input.value.trim()) { add(input.value); input.value = ""; } });
+  input.addEventListener("paste", e => { const t = e.clipboardData.getData("text"); if (/[,;\n]/.test(t)) { e.preventDefault(); add(t); } });
+  return {
+    list,
+    pending: () => input.value.trim(),
+    flush: () => { if (input.value.trim()) { add(input.value); input.value = ""; } },
+    ready: () => list.filter(p => p.state === "ok"),
+    busy: () => list.some(p => p.state === "checking"),
+    bad: () => list.filter(p => p.state === "bad"),
+    clear: () => { list.splice(0); draw(); },
+    recheck: () => { const again = list.splice(0).map(p => p.input); draw(); again.forEach(add); },
+  };
+}
+
+function peopleHint(box, hintEl, fallback){
+  const bad = box.bad();
+  if (bad.length) { hintEl.className = "hint bad"; hintEl.textContent = bad.map(p => p.error).join(" "); }
+  else { hintEl.className = "hint"; hintEl.textContent = fallback; }
+}
+
+const to1 = people("to1", () => { refreshSend(); });
+const to2 = people("to2", () => { refreshMore(); });
+
+/* ---------------- send ---------------- */
+function refreshSend(){
   const total = picked.reduce((s, f) => s + f.size, 0);
-  $("chosen").replaceChildren(...picked.map(f => li(f.name, size(f.size))));
-  $("go").disabled = !picked.length || total > MAX;
-  $("go").textContent = picked.length ? `Send ${picked.length} file${picked.length > 1 ? "s" : ""} (${size(total)})` : "Send";
+  $("chosen").replaceChildren(...picked.map((f, i) => {
+    const l = el("li"); l.append(el("span", "fname", f.name), el("span", "fsize", size(f.size)));
+    const x = el("button", "x", "×"); x.type = "button"; x.setAttribute("aria-label", "Remove " + f.name);
+    x.onclick = () => { picked.splice(i, 1); refreshSend(); };
+    l.append(x); return l;
+  }));
+  const n = to1.ready().length;
+  const files = picked.length ? `${picked.length} file${picked.length > 1 ? "s" : ""} (${size(total)})` : "";
+  $("go").textContent = !picked.length ? "Send" : n ? `Send ${files} to ${n} ${n > 1 ? "people" : "person"}` : `Send ${files}`;
+  $("go").disabled = !picked.length || total > MAX || to1.busy();
+  $("note").hidden = !to1.list.length;
+  $("signin1").hidden = !(to1.list.length && !me());
+  peopleHint(to1, $("to1-hint"), to1.list.length ? "" : "Type a username or Deluxe Mail address, then tap Return. Add as many people as you like.");
   show($("senderr"), total > MAX ? `Too big: the limit is ${MAX_MB} MB.` : "");
 }
+function choose(list){ picked = [...picked, ...list]; refreshSend(); }
 $("file").onchange = e => { choose(e.target.files); e.target.value = ""; };
 const drop = $("drop");
 ["dragenter","dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave","drop"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => choose(e.dataTransfer.files));
+$("signin1-btn").onclick = () => {
+  if (picked.length && !confirm("Signing in leaves this page for a moment, so you'll need to choose your files again. Sign in now?")) return;
+  signIn();
+};
 
 function cleanName(n){ return (n.replace(/[\/\\\x00-\x1f]/g, "_").trim().replace(/^\.+/, "") || "file").slice(0, 200); }
 function randomDir(){ const a = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789"; return [...crypto.getRandomValues(new Uint8Array(24))].map(x => a[x % a.length]).join(""); }
-async function api(path, opts = {}){
-  const r = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, ...opts });
-  const body = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(body.error || "Something went wrong. Try again.");
-  return body;
-}
 function progress(p, text){
   $("bar").hidden = $("pct").hidden = p == null;
   if (p != null){ $("bar").firstElementChild.style.width = p + "%"; $("pct").textContent = text; }
 }
+
 $("go").onclick = async () => {
+  to1.flush();
+  if (to1.busy()) return;
+  if (to1.list.length && !me()) { show($("senderr"), "Sign in with Deluxe Main to send to people, or remove them to just get a code."); return; }
+  if (to1.bad().length) { show($("senderr"), "Remove the people marked in red first."); return; }
   $("go").disabled = true; show($("senderr"), "");
   const total = picked.reduce((s, f) => s + f.size, 0) || 1;
   let done = 0;
@@ -173,13 +328,20 @@ $("go").onclick = async () => {
         clientPayload: JSON.stringify({ code, owner }),
         multipart: f.size > 20 * 1048576,
         contentType: f.type || "application/octet-stream",
-        onUploadProgress: e => { const p = Math.round((done + e.loaded) / total * 100); progress(Math.min(p, 99), `Uploading… ${Math.min(p, 99)}%`); },
+        onUploadProgress: e => { const p = Math.min(99, Math.round((done + e.loaded) / total * 100)); progress(p, `Uploading… ${p}%`); },
       });
       done += f.size;
     }
     progress(100, "Finishing…");
-    current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner }) })), owner };
+    current = { ...(await api("/api/finish", { body: JSON.stringify({ code, owner }) })), owner, to: [] };
+    const people = to1.ready().map(p => p.input);
+    if (people.length) {
+      progress(100, "Sending by Deluxe Mail…");
+      await sendTo(people, $("note").value, false);
+    }
     progress(null);
+    remember();
+    to1.clear(); $("note").value = "";
     showDone();
   } catch (e) {
     progress(null);
@@ -187,38 +349,70 @@ $("go").onclick = async () => {
     $("go").disabled = false;
   }
 };
-const SAVED = "transfer.current";
-function showDone(){
+
+// Sends the current transfer to people by Deluxe Mail; shows who got it.
+async function sendTo(inputs, note, throwOnFail = true){
+  try {
+    const r = await api("/api/share", { body: JSON.stringify({ code: current.code, owner: current.owner, to: inputs, note }) });
+    addResults(r.results);
+    return r;
+  } catch (e) {
+    if (e.body && e.body.results) { addResults(e.body.results); if (throwOnFail) throw e; return e.body; }
+    addResults(inputs.map(input => ({ input, ok: false, error: e.message })));
+    if (throwOnFail) throw e;
+  }
+}
+function addResults(results){
+  current.results = [...(current.results || []), ...results];
+  for (const r of results) if (r.ok && !current.to.includes(r.to)) current.to.push(r.to);
+  drawResults();
+  remember();
+}
+function drawResults(){
+  const rs = current.results || [];
+  $("results").hidden = !rs.length;
+  $("resultlist").replaceChildren(...rs.map(r => {
+    const l = el("li");
+    l.append(el("span", r.ok ? "yes" : "no", r.ok ? `✓ ${r.name} · ${r.to}` : `✕ ${r.input}: ${r.error}`));
+    return l;
+  }));
+}
+
+function remember(){
   try { sessionStorage.setItem(SAVED, JSON.stringify(current)); } catch {}
+  if (me() && current) {
+    D.data.put("sent/" + current.code, {
+      code: current.code, owner: current.owner, link: current.link, expires: current.expires, at: current.at || (current.at = Date.now()),
+      files: current.files.map(f => ({ name: f.name, size: f.size })), to: current.to || [],
+    }).catch(() => {});
+  }
+}
+
+function showDone(){
   $("outcode").textContent = current.code;
   $("outlink").value = current.link;
   $("pick").hidden = true; $("done").hidden = false;
   $("share").hidden = !navigator.share;
-  show($("mailok"), ""); show($("mailerr"), "");
-  mailButton();
+  drawResults(); refreshMore();
+  show($("mailerr"), ""); show($("doneerr"), "");
 }
-const D = window.Deluxe;
-const signedIn = () => !!(D && D.user());
-function mailButton(){ $("mailbtn").textContent = signedIn() ? "Send by Deluxe Mail" : "Sign in with Deluxe Main to send"; }
-if (D) { D.button($("account")); D.onChange(mailButton); D.ready.then(mailButton); }
-$("mailform").onsubmit = async e => {
-  e.preventDefault();
-  show($("mailok"), ""); show($("mailerr"), "");
-  if (!D) return show($("mailerr"), "Deluxe Main could not be reached. Try again in a moment.");
-  if (!signedIn()) { D.signIn(); return; }  // comes back here; the transfer is kept in this tab
-  const to = $("mailto").value.trim();
-  if (!to) return show($("mailerr"), "Enter a Deluxe Mail address.");
+function refreshMore(){
+  const n = to2.ready().length;
+  $("note2").hidden = !to2.list.length;
+  $("mailbtn").disabled = to2.busy() || (!n && me());
+  $("mailbtn").textContent = !me() ? "Sign in with Deluxe Main to send" : n ? `Send to ${n} ${n > 1 ? "people" : "person"}` : "Send by Deluxe Mail";
+  peopleHint(to2, $("to2-hint"), me() ? "" : "Sign in to send this to people's Deluxe Mail.");
+}
+$("mailbtn").onclick = async () => {
+  show($("mailerr"), "");
+  if (!me()) { signIn(); return; }   // comes back here; the transfer is kept in this tab
+  to2.flush();
+  const people = to2.ready().map(p => p.input);
+  if (!people.length) return;
   $("mailbtn").disabled = true;
-  try {
-    const r = await fetch("/api/share", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + D.token() },
-      body: JSON.stringify({ code: current.code, owner: current.owner, to, note: $("note").value }) });
-    const body = await r.json().catch(() => ({}));
-    if (r.status === 401 && body.code === "signin") { D.signIn(); return; }
-    if (!r.ok) throw new Error(body.error || "Could not send that. Try again.");
-    show($("mailok"), `Sent to ${body.to}`);
-    $("mailto").value = ""; $("note").value = "";
-  } catch (err) { show($("mailerr"), err.message); }
-  $("mailbtn").disabled = false;
+  try { await sendTo(people, $("note2").value); to2.clear(); $("note2").value = ""; }
+  catch (e) { show($("mailerr"), e.message); }
+  refreshMore();
 };
 $("copy").onclick = async () => {
   try { await navigator.clipboard.writeText($("outlink").value); } catch { $("outlink").select(); document.execCommand("copy"); }
@@ -226,39 +420,155 @@ $("copy").onclick = async () => {
 };
 $("share").onclick = () => navigator.share({ title: "Files for you", text: `Code: ${current.code}`, url: current.link }).catch(() => {});
 function reset(){
-  picked = []; current = null; choose([]);
+  picked = []; current = null; refreshSend();
   try { sessionStorage.removeItem(SAVED); } catch {}
   $("bar").firstElementChild.style.width = "0";
   $("pick").hidden = false; $("done").hidden = true;
 }
 $("again").onclick = reset;
+async function deleteTransfer(code, owner){
+  const r = await fetch("/api/transfer?code=" + code, { method: "DELETE", headers: { "X-Owner": owner } });
+  if (!r.ok && r.status !== 404) throw new Error("Could not delete.");
+  if (me()) D.data.remove("sent/" + code).catch(() => {});
+}
 $("del").onclick = async () => {
   if (!current || !confirm("Delete these files now? The code will stop working.")) return;
-  const r = await fetch("/api/transfer?code=" + current.code, { method: "DELETE", headers: { "X-Owner": current.owner } });
-  if (r.ok) reset(); else show($("senderr"), "Could not delete.");
+  try { await deleteTransfer(current.code, current.owner); reset(); } catch (e) { show($("doneerr"), e.message); }
 };
 
+/* ---------------- receive ---------------- */
+let shown = null;
 $("codein").oninput = e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""); };
 async function find(code){
-  show($("geterr"), ""); $("found").hidden = true;
+  show($("geterr"), ""); $("found").hidden = true; $("drivebar").hidden = true;
   const r = await fetch("/api/transfer?code=" + encodeURIComponent(code));
   const body = await r.json().catch(() => ({}));
   if (!r.ok) { show($("geterr"), body.error || "Not found."); return; }
-  $("files").replaceChildren(...body.files.map((f, i) => {
-    const a = document.createElement("a");
-    a.href = f.url; a.textContent = f.name; a.download = f.name;
-    return li(a, size(f.size));
+  shown = body;
+  $("files").replaceChildren(...body.files.map(f => {
+    const l = el("li");
+    const a = el("a", "fname", f.name); a.href = f.url; a.download = f.name;
+    const b = el("button", "mini", "Save to Drive"); b.type = "button";
+    b.onclick = () => saveToDrive([f], [b]);
+    f.button = b;
+    l.append(a, el("span", "fsize", size(f.size)), b);
+    return l;
   }));
+  $("saveall").hidden = body.files.length < 2;
   const hrs = Math.max(0, (body.expires - Date.now()) / 3600000);
   $("expires").textContent = hrs >= 1 ? `Available for ${Math.floor(hrs)} more hour${Math.floor(hrs) === 1 ? "" : "s"}` : `Available for ${Math.ceil(hrs * 60)} more minutes`;
   $("found").hidden = false;
   if (location.pathname !== "/d/" + body.code) history.replaceState(null, "", "/d/" + body.code);
+  // Keep it in this person's received history.
+  if (me()) {
+    D.data.get("received/" + body.code).then(old => {
+      if (!old) D.data.put("received/" + body.code, { code: body.code, link: location.origin + "/d/" + body.code, expires: body.expires, at: Date.now(), files: body.files.map(f => ({ name: f.name, size: f.size })) });
+    }).catch(() => {});
+  }
 }
 $("lookup").onsubmit = e => { e.preventDefault(); const c = $("codein").value.trim(); if (c.length === 6) find(c); else show($("geterr"), "Codes are 6 letters and numbers."); };
+$("saveall").onclick = () => saveToDrive(shown.files.filter(f => !f.saved), shown.files.filter(f => !f.saved).map(f => f.button).concat($("saveall")));
 
+/* ---------------- save to Deluxe Drive ---------------- */
+// Adds the files to the person's own Deluxe Drive, in a "Deluxe Transfer" folder.
+async function saveToDrive(files, buttons){
+  if (!me()) { signIn(); return; }  // comes back to this same /d/CODE page
+  buttons.forEach(b => { b.disabled = true; });
+  const user = me(), now = Date.now();
+  let saved = 0, failed = "";
+  try {
+    // The folder (already there is fine).
+    await D.data.put("node:" + DRIVE_FOLDER, { id: DRIVE_FOLDER, ownerId: user.id, parentId: null, type: "folder", name: "Deluxe Transfer", mime: "", size: 0, starred: false, trashed: false, trashedAt: null, createdAt: now, updatedAt: now }, { app: "drive" })
+      .catch(e => { if (e.status !== 409) throw e; });
+    for (const f of files) {
+      if (f.button) f.button.textContent = "Saving…";
+      try {
+        const res = await fetch(f.url);
+        if (!res.ok) throw new Error("The file could not be read (it may have expired).");
+        const blob = await res.blob();
+        const id = `n_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+        const mime = blob.type || "application/octet-stream";
+        const put = await fetch(`${DRIVE_SERVER}/api/db/blobs/${id}`, {
+          method: "PUT", body: blob,
+          headers: { Authorization: "Bearer " + D.token(), "Content-Type": mime, "X-Deluxe-Name": encodeURIComponent(f.name) },
+        });
+        if (!put.ok) throw new Error((await put.json().catch(() => ({}))).error || `Deluxe Drive said no (${put.status}).`);
+        const t = Date.now();
+        await D.data.put("node:" + id, { id, ownerId: user.id, parentId: DRIVE_FOLDER, type: "file", name: f.name, mime, size: blob.size, starred: false, trashed: false, trashedAt: null, createdAt: t, updatedAt: t }, { app: "drive" });
+        f.saved = true; saved++;
+        if (f.button) { f.button.textContent = "Saved ✓"; f.button.classList.add("done"); }
+      } catch (e) {
+        failed = e.message || "Could not save.";
+        if (f.button) { f.button.textContent = "Try again"; f.button.disabled = false; }
+      }
+    }
+  } catch (e) { failed = e.message || "Could not save."; buttons.forEach(b => { b.disabled = false; }); }
+  if (saved) {
+    $("drivemsg").textContent = `Saved ${saved} file${saved > 1 ? "s" : ""} to Deluxe Drive › Deluxe Transfer`;
+    $("drivebar").hidden = false;
+  }
+  if (shown && shown.files.every(f => f.saved)) { $("saveall").textContent = "All saved to Deluxe Drive ✓"; $("saveall").disabled = true; }
+  else $("saveall").disabled = false;
+  show($("geterr"), failed);
+}
+
+/* ---------------- history ---------------- */
+$("hist-signin").onclick = signIn;
+$("seg-sent").onclick = () => { histView = "sent"; loadHistory(); };
+$("seg-recv").onclick = () => { histView = "received"; loadHistory(); };
+const when = t => new Date(t).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+async function loadHistory(){
+  const signed = !!me();
+  $("hist-out").hidden = signed; $("hist-in").hidden = !signed;
+  if (!signed) return;
+  $("seg-sent").setAttribute("aria-pressed", histView === "sent");
+  $("seg-recv").setAttribute("aria-pressed", histView === "received");
+  show($("hist-empty"), "Loading…");
+  $("hist-list").replaceChildren();
+  let items = [];
+  try { items = (await D.data.list({ prefix: histView + "/", limit: 200 })).map(i => i.value).filter(Boolean); }
+  catch (e) { show($("hist-empty"), e.message); return; }
+  items.sort((a, b) => (b.at || 0) - (a.at || 0));
+  show($("hist-empty"), items.length ? "" : histView === "sent" ? "Nothing sent yet." : "Nothing received yet.");
+  $("hist-list").replaceChildren(...items.map(t => {
+    const live = t.expires > Date.now();
+    const box = el("div", "item");
+    const top = el("div", "top");
+    const files = t.files || [];
+    top.append(el("b", "", files.length ? files[0].name + (files.length > 1 ? ` +${files.length - 1} more` : "") : t.code),
+      el("span", "pill" + (live ? "" : " old"), live ? "Active" : "Expired"));
+    const total = files.reduce((s, f) => s + (f.size || 0), 0);
+    const who = histView === "sent" ? (t.to && t.to.length ? "To " + t.to.join(", ") : "Shared by code") : (t.from ? "From " + t.from.name : "Opened with code");
+    box.append(top, el("div", "meta", `${when(t.at)} · ${size(total)} · Code ${t.code}`), el("div", "meta", who));
+    const acts = el("div", "acts");
+    if (live) {
+      const open = el("a", "mini", "Open"); open.href = "/d/" + t.code; acts.append(open);
+      const copy = el("button", "mini", "Copy link"); copy.onclick = async () => { try { await navigator.clipboard.writeText(t.link); copy.textContent = "Copied"; } catch {} };
+      acts.append(copy);
+    }
+    if (histView === "sent" && live && t.owner) {
+      const del = el("button", "mini", "Delete now");
+      del.onclick = async () => { if (!confirm("Delete these files now? The code will stop working.")) return; try { await deleteTransfer(t.code, t.owner); loadHistory(); } catch (e) { alert(e.message); } };
+      acts.append(del);
+    }
+    const forget = el("button", "mini", "Remove");
+    forget.onclick = async () => { await D.data.remove(histView + "/" + t.code).catch(() => {}); loadHistory(); };
+    acts.append(forget);
+    box.append(acts);
+    return box;
+  }));
+}
+
+/* ---------------- start ---------------- */
+if (D) {
+  D.button($("account"));
+  const changed = () => { refreshSend(); refreshMore(); if (!$("hist").hidden) loadHistory(); to1.recheck(); to2.recheck(); };
+  D.onChange(changed);
+}
+refreshSend();
 try {
   const saved = JSON.parse(sessionStorage.getItem(SAVED) || "null");
-  if (saved && saved.code && saved.expires > Date.now() && location.pathname === "/") { current = saved; showDone(); }
+  if (saved && saved.code && saved.expires > Date.now() && location.pathname === "/") { current = saved; current.to ||= []; showDone(); }
 } catch {}
 const m = location.pathname.match(/^\/d\/([A-Za-z0-9]{6})\/?$/);
 if (m) { tab("get"); $("codein").value = m[1].toUpperCase(); find(m[1].toUpperCase()); }

@@ -17,7 +17,7 @@ Object.assign(lib.store, {
   fetchJson: async (url) => JSON.parse(blobs.get(url.slice(BASE.length)).body),
 });
 const routes = {};
-for (const n of ["create", "upload", "finish", "transfer", "cleanup", "share"]) routes[n] = await import(`../api/${n}.js`);
+for (const n of ["create", "upload", "finish", "transfer", "cleanup", "share", "lookup", "health"]) routes[n] = await import(`../api/${n}.js`);
 
 // FAKE_MAIN=1: a pretend Deluxe Main where any Bearer key is "Test Person" and mail is printed.
 if (process.env.FAKE_MAIN === "1") {
@@ -26,7 +26,7 @@ if (process.env.FAKE_MAIN === "1") {
     const reply = (status, body) => new Response(JSON.stringify(body), { status });
     if (path === "/api/auth/me") return reply(200, { user: { id: "u1", name: "Test Person", handle: "test.person" }, app: "transfer" });
     if (path.startsWith("/api/server/account")) { const h = decodeURIComponent(path.split("=")[1]); return h === "nobody" ? reply(404, {}) : reply(200, { user: { id: "u-" + h, name: h, handle: h } }); }
-    if (path.startsWith("/api/data/mail/")) { console.log("MAIL", init.headers["X-Deluxe-Account"], JSON.stringify(JSON.parse(init.body).value)); return reply(200, { ok: true }); }
+    if (/^\/api\/data\/(mail|transfer)\//.test(path)) { console.log("SAVE " + path.split("/")[3], init.headers["X-Deluxe-Account"], JSON.stringify(JSON.parse(init.body).value)); return reply(200, { ok: true }); }
     return reply(404, {});
   };
 }

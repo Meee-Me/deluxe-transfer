@@ -6,9 +6,14 @@ whoever has either can download them for 24 hours.
 - Several files at once (up to 100 MB in total), with an upload progress bar
 - 6-character code (no look-alike characters such as 0/O or 1/I) plus a share link
 - Only the sender can **Delete now**; everything else is removed after it expires
-- **Send by Deluxe Mail**: signed in with Deluxe Main, the sender types a Deluxe Mail address
-  (`name@deluxemail.com` or just `name`). The link and code arrive in that person's Deluxe Mail
-  inbox, from the sender, with a copy in the sender's Sent. Sending files needs no account.
+- **Send to people** (signed in with Deluxe Main): type as many people as you like in **Send to**,
+  as `name`, `@name`, `name@deluxemail.com`, `Name <name@deluxemail.com>` or their full name. Each
+  shows as a chip, checked with Deluxe Main. The link and code arrive in their Deluxe Mail inbox,
+  from you, with a copy in your Sent. Sending files with just a code needs no account.
+- **History**: what you sent and received, kept in your Deluxe account (Deluxe Main).
+- **Save to Deluxe Drive**: received files can be saved into your own Deluxe Drive, in a
+  "Deluxe Transfer" folder.
+- `/api/health` shows whether storage and Deluxe Mail sending are set up (yes/no only).
 
 Runs on **Vercel**. Files go from the browser straight into **Vercel Blob**, so Vercel's
 4.5 MB function limit does not apply.
@@ -49,8 +54,8 @@ receiver ─ GET /api/transfer?code= ──► file list with download links
 sender ─── POST /api/share ──────────► Deluxe Main: a new message in the person's Deluxe Mail inbox
 ```
 
-Deluxe Transfer may only **add** new Deluxe Mail messages (Inbox and Sent). Deluxe Main refuses it
-reading, changing or deleting anyone's mail.
+Deluxe Transfer may only **add** new Deluxe Mail messages (Inbox and Sent) and new Deluxe Drive
+files. Deluxe Main and Deluxe Drive refuse it reading, changing or deleting anyone's mail or files.
 
 Files are stored at `t/CODE/<random 24 characters>/<file name>`, so their addresses can't be guessed.
 
